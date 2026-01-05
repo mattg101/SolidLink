@@ -1,9 +1,59 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { ConnectionStatus } from './components/ConnectionStatus'
+import { useBridge, bridgeClient, MessageTypes } from './bridge'
+import type { ConnectionStatusPayload } from './bridge'
 
 function App() {
-  const [connectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
+  const [debugInfo, setDebugInfo] = useState({
+    wv2Present: false,
+    lastMessage: 'None',
+    renderTime: new Date().toLocaleTimeString()
+  })
+
+  useEffect(() => {
+    const check = setInterval(() => {
+      const present = !!(window as any).chrome?.webview
+      setDebugInfo(prev => ({
+        ...prev,
+        wv2Present: present,
+        renderTime: new Date().toLocaleTimeString()
+      }))
+      if (present) {
+        bridgeClient.init() // Ensure init runs if it missed it earlier
+      }
+    }, 1000)
+    return () => clearInterval(check)
+  }, [])
+
+  // Subscribe to CONNECTION_STATUS messages from C# backend
+  useBridge<ConnectionStatusPayload>(MessageTypes.CONNECTION_STATUS, (message) => {
+    setDebugInfo(prev => ({ ...prev, lastMessage: `STATUS: ${message.payload?.status}` }))
+    if (message.payload?.status === 'connected') {
+      setConnectionStatus('connected')
+    }
+  })
+
+  // Also listen for PONG as a connection verification
+  useBridge(MessageTypes.PONG, () => {
+    setDebugInfo(prev => ({ ...prev, lastMessage: 'PONG' }))
+    setConnectionStatus('connected')
+  })
+
+  // Send UI_READY and PING on mount to initiate handshake
+  useEffect(() => {
+    console.log('[App] Component mounted, signaling UI_READY');
+    bridgeClient.send('UI_READY');
+    bridgeClient.send(MessageTypes.PING);
+
+    // Backup: retry after 2 seconds if still connecting
+    const timer = setTimeout(() => {
+      bridgeClient.send('UI_READY');
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [])
 
   return (
     <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -42,11 +92,24 @@ function App() {
         borderTop: '1px solid var(--color-border)',
         backgroundColor: 'var(--color-bg-secondary)',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        flexDirection: 'column',
+        gap: '0.25rem'
       }}>
-        <ConnectionStatus status={connectionStatus} />
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>v0.1.0</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <ConnectionStatus status={connectionStatus} />
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>v0.1.0</span>
+        </div>
+        <div style={{
+          fontSize: '10px',
+          color: 'var(--color-text-secondary)',
+          borderTop: '1px solid #333',
+          paddingTop: '4px',
+          display: 'flex',
+          justifyContent: 'space-between'
+        }}>
+          <span>WV2: {debugInfo.wv2Present ? '✅' : '❌'} | Last: {debugInfo.lastMessage}</span>
+          <span>{debugInfo.renderTime}</span>
+        </div>
       </footer>
     </div>
   )
