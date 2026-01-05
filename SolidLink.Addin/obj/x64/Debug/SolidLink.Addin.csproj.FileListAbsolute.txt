@@ -1,0 +1,14 @@
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\SolidLink.Addin.csprojResolveAssemblyReference.cache
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\SolidLink.Addin.dll
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\SolidLink.Addin.pdb
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\SolidLink.Addin.dll
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\SolidLink.Addin.pdb
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\SolidLink.Addin_MarkupCompile.cache
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\WebView2Loader.dll
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\Microsoft.Web.WebView2.Core.dll
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\Microsoft.Web.WebView2.Wpf.dll
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\Microsoft.Web.WebView2.Core.xml
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\bin\x64\Debug\Microsoft.Web.WebView2.Wpf.xml
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\UI\SolidLinkWindow.baml
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\UI\SolidLinkWindow.g.cs
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Addin\obj\x64\Debug\SolidLink.Addin.g.resources
