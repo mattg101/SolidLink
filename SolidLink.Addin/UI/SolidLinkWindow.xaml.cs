@@ -1,18 +1,24 @@
 using System;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
+using SolidWorks.Interop.sldworks;
 using SolidLink.Addin.Bridge;
+using SolidLink.Addin.Services;
 
 namespace SolidLink.Addin.UI
 {
     public partial class SolidLinkWindow : Window
     {
+        private readonly SldWorks swApp;
         private readonly MessageBridge bridge;
+        private readonly TreeTraverser traverser;
 
-        public SolidLinkWindow()
+        public SolidLinkWindow(SldWorks app)
         {
             InitializeComponent();
+            swApp = app ?? throw new ArgumentNullException(nameof(app));
             bridge = new MessageBridge();
+            traverser = new TreeTraverser(swApp);
             InitializeWebView();
         }
 
@@ -54,7 +60,15 @@ namespace SolidLink.Addin.UI
             // Handle custom messages from the frontend
             System.Diagnostics.Debug.WriteLine($"[SolidLink] Received message: {message.Type}");
             
-            // TODO: Add message routing for feature-specific handlers
+            if (message.Type == "REQUEST_TREE")
+            {
+                var model = swApp.ActiveDoc as ModelDoc2;
+                if (model != null)
+                {
+                    var tree = traverser.ExtractModel(model);
+                    bridge.Send("TREE_RESPONSE", tree);
+                }
+            }
         }
 
         protected override void OnClosed(EventArgs e)

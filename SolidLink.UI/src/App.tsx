@@ -2,10 +2,63 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { useBridge, bridgeClient, MessageTypes } from './bridge'
-import type { ConnectionStatusPayload } from './bridge'
+import type { ConnectionStatusPayload, BridgeMessage } from './bridge'
+
+interface RobotTree {
+  name: string;
+  rootFrame: Frame;
+}
+
+interface Frame {
+  id: string;
+  name: string;
+  children: Frame[];
+  links: any[];
+}
+
+const TreeItem = ({ frame, level = 0 }: { frame: Frame; level?: number }) => {
+  const [isOpen, setIsOpen] = useState(true);
+  const hasChildren = frame.children && frame.children.length > 0;
+
+  return (
+    <div style={{ marginLeft: `${level * 12}px` }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: '4px 8px',
+          cursor: hasChildren ? 'pointer' : 'default',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.875rem',
+          borderRadius: '4px',
+          backgroundColor: 'transparent',
+          transition: 'background-color 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        <span style={{ fontSize: '10px', width: '12px' }}>
+          {hasChildren ? (isOpen ? '▼' : '▶') : '•'}
+        </span>
+        <span style={{ color: frame.links.length > 0 ? 'var(--color-primary)' : 'inherit' }}>
+          {frame.name}
+        </span>
+      </div>
+      {isOpen && hasChildren && (
+        <div>
+          {frame.children.map(child => (
+            <TreeItem key={child.id} frame={child} level={level + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
+  const [tree, setTree] = useState<RobotTree | null>(null)
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
     lastMessage: 'None',
@@ -41,6 +94,16 @@ function App() {
     setConnectionStatus('connected')
   })
 
+  // also listen for TREE_RESPONSE
+  useBridge<any>('TREE_RESPONSE', (message) => {
+    setDebugInfo(prev => ({ ...prev, lastMessage: `TREE: ${message.payload?.name}` }))
+    setTree(message.payload as RobotTree)
+  })
+
+  const refreshTree = () => {
+    bridgeClient.send('REQUEST_TREE');
+  };
+
   // Send UI_READY and PING on mount to initiate handshake
   useEffect(() => {
     console.log('[App] Component mounted, signaling UI_READY');
@@ -54,6 +117,7 @@ function App() {
 
     return () => clearTimeout(timer);
   }, [])
+
 
   return (
     <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -75,14 +139,31 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '1rem', overflow: 'auto' }}>
-        <div className="panel" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No Model Loaded</h2>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-              Open an assembly in SolidWorks to begin.
-            </p>
-          </div>
+      <main style={{ flex: 1, padding: '1rem', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+            Robot Hierarchy
+          </h2>
+          <button
+            disabled={connectionStatus !== 'connected'}
+            onClick={refreshTree}
+            style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+          >
+            Refresh Tree
+          </button>
+        </div>
+
+        <div className="panel" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
+          {tree ? (
+            <TreeItem frame={tree.rootFrame} />
+          ) : (
+            <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No Model Extracted</h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                Open an assembly and click "Refresh Tree".
+              </p>
+            </div>
+          )}
         </div>
       </main>
 

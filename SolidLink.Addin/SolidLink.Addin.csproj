@@ -80,6 +80,11 @@
     <Compile Include="UI\SolidLinkWindow.xaml.cs">
       <DependentUpon>SolidLinkWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Model\Frame.cs" />
+    <Compile Include="Model\Joint.cs" />
+    <Compile Include="Model\Link.cs" />
+    <Compile Include="Model\RobotModel.cs" />
+    <Compile Include="Services\TreeTraverser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

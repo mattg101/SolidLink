@@ -73,7 +73,7 @@ namespace SolidLink.Addin
         {
             try
             {
-                var window = new SolidLinkWindow();
+                var window = new SolidLinkWindow((SldWorks)swApp);
                 window.Show();
             }
             catch (Exception ex)
