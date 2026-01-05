@@ -11,6 +11,12 @@ namespace SolidLink.Addin.Model
         [JsonProperty("name")]
         public string Name { get; set; }
 
+        [JsonProperty("type")]
+        public string Type { get; set; } // COMPONENT, COORDSYS, AXIS, PLANE
+
+        [JsonProperty("referencePath")]
+        public string ReferencePath { get; set; }
+
         [JsonProperty("localTransform")]
         public TransformModel LocalTransform { get; set; }
 

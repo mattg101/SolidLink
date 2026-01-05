@@ -85,6 +85,7 @@
     <Compile Include="Model\Link.cs" />
     <Compile Include="Model\RobotModel.cs" />
     <Compile Include="Services\TreeTraverser.cs" />
+    <Compile Include="Services\GeometryExtractor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

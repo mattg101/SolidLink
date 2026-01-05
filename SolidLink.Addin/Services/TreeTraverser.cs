@@ -10,10 +10,12 @@ namespace SolidLink.Addin.Services
     public class TreeTraverser
     {
         private readonly SldWorks swApp;
+        private readonly GeometryExtractor geometryExtractor;
 
         public TreeTraverser(SldWorks app)
         {
             swApp = app ?? throw new ArgumentNullException(nameof(app));
+            geometryExtractor = new GeometryExtractor(swApp);
         }
 
         public GRM.RobotModel ExtractModel(ModelDoc2 model)
@@ -47,18 +49,37 @@ namespace SolidLink.Addin.Services
             var frame = new GRM.Frame
             {
                 Name = comp.Name2,
+                Type = "COMPONENT",
+                ReferencePath = comp.Name2,
                 LocalTransform = ExtractTransform(comp.GetTotalTransform(true))
             };
 
-            // If it's a part, add a link
             var modelDoc = comp.GetModelDoc2() as ModelDoc2;
             if (modelDoc != null && modelDoc.GetType() == (int)swDocumentTypes_e.swDocPART)
             {
-                frame.Links.Add(new GRM.Link
+                var link = new GRM.Link
                 {
                     Name = comp.Name2 + "_link"
-                    // TODO: Extract mass properties and geometry URI
-                });
+                };
+
+                // Extract decimated geometry from the bodies
+                var part = (PartDoc)modelDoc;
+                object[] bodies = (object[])part.GetBodies2((int)swBodyType_e.swAllBodies, true);
+                if (bodies != null)
+                {
+                    foreach (Body2 body in bodies)
+                    {
+                        var color = (double[])comp.GetModelMaterialPropertyValues("");
+                        if (color == null || color.Length < 3) color = new double[] { 0.8, 0.8, 0.8, 1.0 };
+                        
+                        var geom = geometryExtractor.ExtractBodyGeometry(body, color);
+                        if (geom != null)
+                        {
+                            link.Visuals.Add(geom);
+                        }
+                    }
+                }
+                frame.Links.Add(link);
             }
 
             // Recursive children
@@ -85,7 +106,9 @@ namespace SolidLink.Addin.Services
         {
             var frame = new GRM.Frame
             {
-                Name = model.GetTitle()
+                Name = model.GetTitle(),
+                Type = "COMPONENT",
+                ReferencePath = model.GetTitle()
             };
             frame.Links.Add(new GRM.Link { Name = model.GetTitle() + "_link" });
             return frame;
@@ -106,7 +129,9 @@ namespace SolidLink.Addin.Services
                 {
                     var childFrame = new GRM.Frame
                     {
-                        Name = feature.Name
+                        Name = feature.Name,
+                        Type = typeName.ToUpper(),
+                        ReferencePath = feature.Name
                     };
 
                     if (typeName == "CoordSys")

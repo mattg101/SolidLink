@@ -40,7 +40,19 @@ namespace SolidLink.Addin.Model
         [JsonProperty("uri")]
         public string Uri { get; set; } // e.g. "package://meshes/link1.stl"
 
+        [JsonProperty("meshData")]
+        public MeshData MeshData { get; set; }
+
         [JsonProperty("color")]
         public double[] Color { get; set; } = { 0.8, 0.8, 0.8, 1.0 };
+    }
+
+    public class MeshData
+    {
+        [JsonProperty("positions")]
+        public float[] Positions { get; set; }
+
+        [JsonProperty("indices")]
+        public int[] Indices { get; set; }
     }
 }
