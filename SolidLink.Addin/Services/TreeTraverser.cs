@@ -22,6 +22,10 @@ namespace SolidLink.Addin.Services
         {
             if (model == null) return null;
 
+            DiagnosticLogger.Log($"========== TREE EXTRACTION START ==========");
+            DiagnosticLogger.Log($"Model: {model.GetTitle()}");
+            DiagnosticLogger.Log($"Type: {(model.GetType() == (int)swDocumentTypes_e.swDocASSEMBLY ? "ASSEMBLY" : "PART")}");
+
             var robot = new GRM.RobotModel
             {
                 Name = model.GetTitle()
@@ -46,12 +50,21 @@ namespace SolidLink.Addin.Services
         {
             if (comp == null) return null;
 
+            // --- FILE-BASED DIAGNOSTIC LOGGING ---
+            var parent = comp.GetParent();
+            string parentName = parent != null ? ((Component2)parent).Name2 : "(ROOT)";
+            var transform = comp.Transform2;
+            double[] tData = transform?.ArrayData;
+            
+            DiagnosticLogger.LogComponent(comp.Name2, parentName, tData);
+            // --- END DIAGNOSTIC ---
+
             var frame = new GRM.Frame
             {
                 Name = comp.Name2,
                 Type = "COMPONENT",
                 ReferencePath = comp.Name2,
-                LocalTransform = ExtractTransform(comp.GetTotalTransform(true))
+                LocalTransform = ExtractTransform(comp.Transform2)
             };
 
             var modelDoc = comp.GetModelDoc2() as ModelDoc2;
@@ -72,7 +85,7 @@ namespace SolidLink.Addin.Services
                         var color = (double[])comp.GetModelMaterialPropertyValues("");
                         if (color == null || color.Length < 3) color = new double[] { 0.8, 0.8, 0.8, 1.0 };
                         
-                        var geom = geometryExtractor.ExtractBodyGeometry(body, color);
+                        var geom = geometryExtractor.ExtractBodyGeometry(body, color, modelDoc);
                         if (geom != null)
                         {
                             link.Visuals.Add(geom);
@@ -157,52 +170,13 @@ namespace SolidLink.Addin.Services
             if (swTransform == null) return new GRM.TransformModel();
 
             double[] data = swTransform.ArrayData;
-            // SW MathTransform array: [r11, r12, r13, r21, r22, r23, r31, r32, r33, tx, ty, tz, scale]
-            
-            var transform = new GRM.TransformModel
+            // data: [r11, r12, r13, r21, r22, r23, r31, r32, r33, tx, ty, tz, scale]
+
+            return new GRM.TransformModel
             {
-                Position = new[] { data[9], data[10], data[11] }
+                Position = new[] { data[9], data[10], data[11] },
+                Matrix = data 
             };
-
-            // Convert rotation matrix to quaternion
-            // (Standard math conversion)
-            double t = data[0] + data[4] + data[8];
-            double x, y, z, w;
-            if (t > 0)
-            {
-                double s = Math.Sqrt(t + 1.0) * 2;
-                w = 0.25 * s;
-                x = (data[7] - data[5]) / s;
-                y = (data[2] - data[6]) / s;
-                z = (data[3] - data[1]) / s;
-            }
-            else if ((data[0] > data[4]) && (data[0] > data[8]))
-            {
-                double s = Math.Sqrt(1.0 + data[0] - data[4] - data[8]) * 2;
-                w = (data[7] - data[5]) / s;
-                x = 0.25 * s;
-                y = (data[1] + data[3]) / s;
-                z = (data[2] + data[6]) / s;
-            }
-            else if (data[4] > data[8])
-            {
-                double s = Math.Sqrt(1.0 + data[4] - data[0] - data[8]) * 2;
-                w = (data[2] - data[6]) / s;
-                x = (data[1] + data[3]) / s;
-                y = 0.25 * s;
-                z = (data[5] + data[7]) / s;
-            }
-            else
-            {
-                double s = Math.Sqrt(1.0 + data[8] - data[0] - data[4]) * 2;
-                w = (data[3] - data[1]) / s;
-                x = (data[2] + data[6]) / s;
-                y = (data[5] + data[7]) / s;
-                z = 0.25 * s;
-            }
-
-            transform.Rotation = new[] { x, y, z, w };
-            return transform;
         }
     }
 }
