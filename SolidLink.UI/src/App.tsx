@@ -142,9 +142,9 @@ function App() {
   }, []);
 
   // also listen for TREE_RESPONSE
-  useBridge<any>('TREE_RESPONSE', (message) => {
+  useBridge<RobotTree>('TREE_RESPONSE', (message) => {
     log(`Received TREE_RESPONSE for model: ${message.payload?.name}`, 'info');
-    setTree(message.payload as RobotTree)
+    setTree(message.payload);
   })
 
   useBridge<string>('ERROR_RESPONSE', (message) => {
@@ -215,6 +215,7 @@ function App() {
               style={{ width: '100%', padding: '6px 10px', fontSize: '0.875rem' }}
             />
           </div>
+
 
           <div className="panel" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
             {tree ? (

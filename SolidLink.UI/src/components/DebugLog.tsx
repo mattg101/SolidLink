@@ -6,53 +6,51 @@ export interface LogEntry {
     message: string;
 }
 
+const logStore: LogEntry[] = [];
+const logListeners: Set<() => void> = new Set();
+
+// Setup global console capture immediately
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+const addToStore = (message: any, level: LogEntry['level']) => {
+    const msgString = typeof message === 'string' ? message :
+        (message instanceof Error ? message.stack || message.message : JSON.stringify(message));
+    logStore.push({
+        timestamp: new Date().toLocaleTimeString(),
+        level,
+        message: msgString
+    });
+    if (logStore.length > 150) logStore.shift();
+    logListeners.forEach(listener => listener());
+};
+
+console.log = (...args) => {
+    addToStore(args.join(' '), 'info');
+    originalLog.apply(console, args);
+};
+console.error = (...args) => {
+    addToStore(args.join(' '), 'error');
+    originalError.apply(console, args);
+};
+console.warn = (...args) => {
+    addToStore(args.join(' '), 'warn');
+    originalWarn.apply(console, args);
+};
+
 export const useLogger = () => {
     const [logs, setLogs] = useState<LogEntry[]>([]);
 
     useEffect(() => {
-        const originalLog = console.log;
-        const originalError = console.error;
-        const originalWarn = console.warn;
-
-        const addEntry = (message: any, level: LogEntry['level']) => {
-            const msgString = typeof message === 'string' ? message : JSON.stringify(message);
-            const entry: LogEntry = {
-                timestamp: new Date().toLocaleTimeString(),
-                level,
-                message: msgString
-            };
-            setLogs(prev => [...prev.slice(-99), entry]);
-        };
-
-        console.log = (...args) => {
-            addEntry(args.join(' '), 'info');
-            originalLog.apply(console, args);
-        };
-        console.error = (...args) => {
-            addEntry(args.join(' '), 'error');
-            originalError.apply(console, args);
-        };
-        console.warn = (...args) => {
-            addEntry(args.join(' '), 'warn');
-            originalWarn.apply(console, args);
-        };
-
-        return () => {
-            console.log = originalLog;
-            console.error = originalError;
-            console.warn = originalWarn;
-        };
+        const update = () => setLogs([...logStore]);
+        logListeners.add(update);
+        update(); // initial load
+        return () => { logListeners.delete(update); };
     }, []);
 
-    const log = (message: string, level: LogEntry['level'] = 'info') => {
-        // This manual log function is still useful for specific tagging
-        const entry: LogEntry = {
-            timestamp: new Date().toLocaleTimeString(),
-            level,
-            message: `[MANUAL] ${message}`
-        };
-        setLogs(prev => [...prev.slice(-99), entry]);
-        console[level](message);
+    const log = (message: any, level: LogEntry['level'] = 'info') => {
+        addToStore(message, level);
     };
 
     return { logs, log };
@@ -95,7 +93,19 @@ export const DebugLog: React.FC<{ logs: LogEntry[]; isOpen: boolean; onClose: ()
                 backgroundColor: '#252525'
             }}>
                 <span style={{ color: '#aaa', fontWeight: 'bold' }}>DEBUG LOG</span>
-                <button onClick={onClose} style={{ padding: '2px 8px', fontSize: '10px' }}>Close</button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => {
+                            const text = logs.map(l => `[${l.timestamp}] ${l.message}`).join('\n');
+                            navigator.clipboard.writeText(text);
+                            alert('Logs copied to clipboard');
+                        }}
+                        style={{ padding: '2px 8px', fontSize: '10px' }}
+                    >
+                        Copy Logs
+                    </button>
+                    <button onClick={onClose} style={{ padding: '2px 8px', fontSize: '10px' }}>Close</button>
+                </div>
             </div>
             <div
                 ref={scrollRef}

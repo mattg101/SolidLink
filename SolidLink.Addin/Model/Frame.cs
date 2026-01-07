@@ -44,6 +44,9 @@ namespace SolidLink.Addin.Model
         [JsonProperty("rotation")]
         public double[] Rotation { get; set; } = new double[4]; // [x, y, z, w] quaternion
 
+        [JsonProperty("matrix")]
+        public double[] Matrix { get; set; } // 4x4 raw matrix
+
         public TransformModel()
         {
             Rotation[3] = 1.0; // Identity quaternion
