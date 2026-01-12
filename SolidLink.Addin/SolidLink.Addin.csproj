@@ -76,6 +76,8 @@
   <ItemGroup>
     <Compile Include="SwAddin.cs" />
     <Compile Include="Bridge\BridgeMessage.cs" />
+    <Compile Include="Bridge\CoreWebView2BridgeAdapter.cs" />
+    <Compile Include="Bridge\IWebViewBridge.cs" />
     <Compile Include="Bridge\MessageBridge.cs" />
     <Compile Include="UI\SolidLinkWindow.xaml.cs">
       <DependentUpon>SolidLinkWindow.xaml</DependentUpon>
@@ -88,11 +90,20 @@
     <Compile Include="Services\GeometryExtractor.cs" />
     <Compile Include="Services\DiagnosticLogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Adapters\SolidWorksContext.cs" />
+    <Compile Include="Adapters\SolidWorksModelDocument.cs" />
+    <Compile Include="Adapters\SolidWorksConfiguration.cs" />
+    <Compile Include="Adapters\SolidWorksComponent.cs" />
+    <Compile Include="Adapters\SolidWorksReferenceFrame.cs" />
+    <Compile Include="Adapters\SolidWorksBody.cs" />
+    <Compile Include="Tools\FixtureData.cs" />
+    <Compile Include="Tools\FixtureExporter.cs" />
     <Compile Include="Abstractions\ISolidWorksContext.cs" />
     <Compile Include="Abstractions\IModelDocument.cs" />
     <Compile Include="Abstractions\IComponent.cs" />
     <Compile Include="Abstractions\IConfiguration.cs" />
     <Compile Include="Abstractions\IBody.cs" />
+    <Compile Include="Abstractions\IReferenceFrame.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="UI\SolidLinkWindow.xaml">

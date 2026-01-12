@@ -47,5 +47,7 @@ namespace SolidLink.Tests.Mocks
                 return _activeConfiguration;
             }
         }
+
+        public double UnitToMeters => _fixtureData.UnitToMeters ?? 0.0254;
     }
 }

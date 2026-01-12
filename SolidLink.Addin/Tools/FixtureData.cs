@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace SolidLink.Tests.Mocks
+namespace SolidLink.Addin.Tools
 {
     /// <summary>
-    /// Root fixture data structure for JSON deserialization.
+    /// Root fixture data structure for JSON serialization.
     /// </summary>
     public class FixtureData
     {
@@ -15,7 +15,7 @@ namespace SolidLink.Tests.Mocks
         public string Type { get; set; }
 
         [JsonProperty("unitToMeters")]
-        public double? UnitToMeters { get; set; }
+        public double UnitToMeters { get; set; }
 
         [JsonProperty("rootComponent")]
         public ComponentFixture RootComponent { get; set; }

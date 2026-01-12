@@ -217,7 +217,7 @@ function App() {
           </div>
 
 
-          <div className="panel" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
+          <div className="panel" data-testid="tree-root" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
             {tree ? (
               <TreeItem frame={tree.rootFrame} filter={filter} />
             ) : (

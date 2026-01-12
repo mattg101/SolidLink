@@ -13,6 +13,7 @@ namespace SolidLink.Tests.Mocks
         private readonly IComponent _parent;
         private List<IComponent> _children;
         private List<IBody> _bodies;
+        private List<IReferenceFrame> _referenceFrames;
 
         public MockComponent(ComponentFixture fixture, IComponent parent)
         {
@@ -57,6 +58,20 @@ namespace SolidLink.Tests.Mocks
         }
 
         public double[] MaterialColor => _fixture.MaterialColor ?? new double[] { 0.8, 0.8, 0.8, 1.0 };
+
+        public IEnumerable<IReferenceFrame> ReferenceFrames
+        {
+            get
+            {
+                if (_referenceFrames == null)
+                {
+                    _referenceFrames = _fixture.ReferenceFrames?
+                        .Select(r => (IReferenceFrame)new MockReferenceFrame(r))
+                        .ToList() ?? new List<IReferenceFrame>();
+                }
+                return _referenceFrames;
+            }
+        }
     }
 
     /// <summary>
@@ -105,5 +120,24 @@ namespace SolidLink.Tests.Mocks
         }
 
         public float[] GetTessTriangles() => _triangles;
+    }
+
+    /// <summary>
+    /// Mock implementation of IReferenceFrame.
+    /// </summary>
+    public class MockReferenceFrame : IReferenceFrame
+    {
+        private readonly ReferenceFrameFixture _fixture;
+
+        public MockReferenceFrame(ReferenceFrameFixture fixture)
+        {
+            _fixture = fixture;
+        }
+
+        public string Name => _fixture.Name;
+
+        public string Type => _fixture.Type;
+
+        public double[] TransformMatrix => _fixture.Transform ?? new double[] { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1 };
     }
 }

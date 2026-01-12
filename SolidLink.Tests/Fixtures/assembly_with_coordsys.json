@@ -1,0 +1,24 @@
+{
+  "title": "AssemblyWithCoordSys",
+  "type": "Assembly",
+  "unitToMeters": 0.001,
+  "rootComponent": {
+    "name": "Root-Coord",
+    "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    "materialColor": [0.5, 0.5, 0.5, 1.0],
+    "bodies": [],
+    "children": [],
+    "referenceFrames": [
+      {
+        "name": "CS1",
+        "type": "CoordSys",
+        "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 0.0, 0.0, 1]
+      },
+      {
+        "name": "Axis1",
+        "type": "RefAxis",
+        "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.2, 0.0, 1]
+      }
+    ]
+  }
+}

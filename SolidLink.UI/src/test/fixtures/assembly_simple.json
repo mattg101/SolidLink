@@ -1,0 +1,29 @@
+{
+  "name": "SimpleRobot",
+  "rootFrame": {
+    "id": "root",
+    "name": "Base-1",
+    "type": "COMPONENT",
+    "referencePath": "Base-1",
+    "children": [
+      {
+        "id": "arm",
+        "name": "Arm-1",
+        "type": "COMPONENT",
+        "referencePath": "Arm-1",
+        "children": [
+          {
+            "id": "end",
+            "name": "EndEffector-1",
+            "type": "COMPONENT",
+            "referencePath": "EndEffector-1",
+            "children": [],
+            "links": []
+          }
+        ],
+        "links": []
+      }
+    ],
+    "links": []
+  }
+}

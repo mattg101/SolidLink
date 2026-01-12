@@ -2,6 +2,8 @@ using System;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using SolidWorks.Interop.sldworks;
+using SolidLink.Addin.Adapters;
+using SolidLink.Addin.Abstractions;
 using SolidLink.Addin.Bridge;
 using SolidLink.Addin.Services;
 
@@ -12,13 +14,15 @@ namespace SolidLink.Addin.UI
         private readonly SldWorks swApp;
         private readonly MessageBridge bridge;
         private readonly TreeTraverser traverser;
+        private readonly ISolidWorksContext context;
 
         public SolidLinkWindow(SldWorks app)
         {
             InitializeComponent();
             swApp = app ?? throw new ArgumentNullException(nameof(app));
             bridge = new MessageBridge();
-            traverser = new TreeTraverser(swApp);
+            context = new SolidWorksContext(swApp);
+            traverser = new TreeTraverser(context);
             InitializeWebView();
         }
 
@@ -64,7 +68,7 @@ namespace SolidLink.Addin.UI
             {
                 try
                 {
-                    var model = swApp.ActiveDoc as ModelDoc2;
+                    var model = context.ActiveModel;
                     if (model != null)
                     {
                         System.Diagnostics.Debug.WriteLine("[SolidLink] Extraction started...");

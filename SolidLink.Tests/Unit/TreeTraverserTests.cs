@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using SolidLink.Addin.Services;
 using SolidLink.Tests.Mocks;
 using System.IO;
 using System.Linq;
@@ -140,6 +141,42 @@ namespace SolidLink.Tests.Unit
                 count += CountNodes(child);
             }
             return count;
+        }
+
+        [Test]
+        public void TreeTraverser_ExtractModel_ReturnsFrameHierarchy()
+        {
+            // Arrange
+            var fixturePath = Path.Combine(_fixturesPath, "assembly_simple.json");
+            var context = new MockSolidWorksContext(fixturePath);
+            var traverser = new TreeTraverser(context);
+
+            // Act
+            var model = traverser.ExtractModel(context.ActiveModel);
+
+            // Assert
+            Assert.That(model, Is.Not.Null);
+            Assert.That(model.RootFrame, Is.Not.Null);
+            Assert.That(model.RootFrame.Name, Is.EqualTo("Base-1"));
+            Assert.That(model.RootFrame.Links.Count, Is.EqualTo(1));
+            Assert.That(model.RootFrame.Children.Count, Is.EqualTo(1));
+            Assert.That(model.RootFrame.Children[0].Name, Is.EqualTo("Arm-1"));
+        }
+
+        [Test]
+        public void TreeTraverser_ReferenceFrames_AreIncluded()
+        {
+            // Arrange
+            var fixturePath = Path.Combine(_fixturesPath, "assembly_with_coordsys.json");
+            var context = new MockSolidWorksContext(fixturePath);
+            var traverser = new TreeTraverser(context);
+
+            // Act
+            var model = traverser.ExtractModel(context.ActiveModel);
+
+            // Assert
+            var root = model.RootFrame;
+            Assert.That(root.Children.Any(c => c.Type == "COORDSYS"), Is.True);
         }
     }
 }

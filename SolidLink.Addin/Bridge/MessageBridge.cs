@@ -11,9 +11,9 @@ namespace SolidLink.Addin.Bridge
     /// </summary>
     public class MessageBridge
     {
-        private CoreWebView2 webView;
+        private IWebViewBridge webView;
         private readonly ConcurrentDictionary<string, TaskCompletionSource<BridgeMessage>> pendingRequests;
-        
+
         /// <summary>
         /// Event raised when a message is received from the frontend.
         /// </summary>
@@ -29,8 +29,22 @@ namespace SolidLink.Addin.Bridge
         /// </summary>
         public void Initialize(CoreWebView2 coreWebView)
         {
-            webView = coreWebView ?? throw new ArgumentNullException(nameof(coreWebView));
-            webView.WebMessageReceived += OnWebMessageReceived;
+            Initialize(new CoreWebView2BridgeAdapter(coreWebView));
+        }
+
+        /// <summary>
+        /// Initialize the bridge with a testable WebView bridge implementation.
+        /// </summary>
+        public void Initialize(IWebViewBridge webViewBridge)
+        {
+            if (webView != null)
+            {
+                webView.WebMessageReceivedJson -= OnWebMessageReceived;
+                webView.Dispose();
+            }
+
+            webView = webViewBridge ?? throw new ArgumentNullException(nameof(webViewBridge));
+            webView.WebMessageReceivedJson += OnWebMessageReceived;
         }
 
         /// <summary>
@@ -89,11 +103,10 @@ namespace SolidLink.Addin.Bridge
             }
         }
 
-        private void OnWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        private void OnWebMessageReceived(object sender, string json)
         {
             try
             {
-                string json = e.WebMessageAsJson;
                 var message = JsonConvert.DeserializeObject<BridgeMessage>(json);
 
                 if (message == null) return;
@@ -134,7 +147,8 @@ namespace SolidLink.Addin.Bridge
         {
             if (webView != null)
             {
-                webView.WebMessageReceived -= OnWebMessageReceived;
+                webView.WebMessageReceivedJson -= OnWebMessageReceived;
+                webView.Dispose();
                 webView = null;
             }
             pendingRequests.Clear();

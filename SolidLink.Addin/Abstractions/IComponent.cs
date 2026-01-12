@@ -42,5 +42,10 @@ namespace SolidLink.Addin.Abstractions
         /// Gets the material color as [R, G, B, A] in 0-1 range.
         /// </summary>
         double[] MaterialColor { get; }
+
+        /// <summary>
+        /// Gets reference frames (coordinate systems, axes, planes) defined in this component.
+        /// </summary>
+        IEnumerable<IReferenceFrame> ReferenceFrames { get; }
     }
 }

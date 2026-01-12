@@ -19,6 +19,11 @@ namespace SolidLink.Addin.Abstractions
         /// Gets the active configuration, or null if not applicable.
         /// </summary>
         IConfiguration ActiveConfiguration { get; }
+
+        /// <summary>
+        /// Gets the unit conversion factor from document units to meters.
+        /// </summary>
+        double UnitToMeters { get; }
     }
 
     /// <summary>
