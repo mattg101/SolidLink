@@ -7,6 +7,7 @@
 **Key Value:** "Trust through Visualization." Use Parasolid geometry for internal high-fidelity rendering and provide a 60fps interactive preview that matches the final URDF physics.
 
 **Architecture:** C# (SolidWorks API) for the backend/data extraction, WebView2 (React/Three.js) for the frontend rendering and configuration UI.
+**Agent-First Objective:** Every meaningful workflow must be reproducible without SolidWorks UI. The system must expose deterministic inputs/outputs so agents can validate behavior headlessly.
 
 ---
 
@@ -23,14 +24,29 @@
 - [x] **Task 2.2:** Build the Feature Tree Traversal engine with real-time filtering and selection.
 - [x] **Task 2.3:** 3D Viewport Alignment (rotation matrix + flat rendering).
 
-### Phase 2.5: Agent-Friendly Development Toolchain
+### Phase 2.5: Agent-First Development Toolchain
 - [x] **Task 2.5.1:** Create interface abstractions (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.).
 - [x] **Task 2.5.2:** Create `SolidLink.Tests/` project with NUnit + Moq.
 - [x] **Task 2.5.3:** Implement mock layer loading from JSON fixtures.
 - [x] **Task 2.5.4:** Write unit tests validating mock infrastructure (6 tests passing).
-- [ ] **Task 2.5.5:** Refactor `TreeTraverser` to accept interface-based context.
-- [ ] **Task 2.5.6:** Add Playwright E2E tests for frontend.
+- [x] **Task 2.5.5:** Refactor `TreeTraverser` to accept interface-based context.
+- [x] **Task 2.5.6:** Add Playwright E2E tests for frontend.
 - [ ] **Task 2.5.7:** Configure GitHub Actions CI pipeline.
+- [ ] **Task 2.5.8:** Add deterministic "golden" outputs for JSON bridge and mesh metadata snapshots.
+- [ ] **Task 2.5.9:** Add replayable bridge recordings for agent regression runs.
+- [ ] **Task 2.5.10:** Add CLI harness for headless extract + validate workflows.
+    - **Exit Criteria:** Single CLI entrypoint runs headless extraction using mocks and produces a JSON report plus snapshot diffs.
+    - **Artifacts:** `reports/headless-run.json`, `reports/diff-summary.txt`.
+    - **Test Gate:** Fails CI on non-empty diffs.
+- [ ] **Task 2.5.11:** Define snapshot schema and normalization rules.
+    - **Exit Criteria:** Schema documented; canonical ordering + float rounding rules implemented.
+    - **Artifacts:** `SolidLink.Tests/Fixtures/snapshot-schema.md`, `SolidLink.Tests/Fixtures/normalize-snapshot.cs`.
+- [ ] **Task 2.5.12:** Baseline golden snapshots for core assemblies.
+    - **Exit Criteria:** At least 2 fixture assemblies with committed snapshots.
+    - **Artifacts:** `SolidLink.Tests/Fixtures/*snapshot*.json`.
+- [ ] **Task 2.5.13:** Bridge recording capture + replay harness.
+    - **Exit Criteria:** Record mode produces a replay file; replay mode yields identical snapshots.
+    - **Artifacts:** `SolidLink.Tests/Fixtures/*recording*.json`, `reports/replay-diff.txt`.
 
 ### Phase 3: The Configuration Environment (Dedicated Windows)
 *Objective: A unified, browser-based workspace that replaces the disjointed SW2URDF wizard.*
@@ -46,6 +62,11 @@
 ---
 
 ## 3. THE LAW (Standard Operating Procedures)
+
+### Roadmap Definitions
+- **Exit Criteria:** The concrete condition that marks a task complete and shippable.
+- **Artifacts:** The files or outputs that must exist to satisfy the task.
+- **Test Gate:** The automated check that must pass before merging.
 
 ### SOP A: The Visualization Standard
 > **Constraint:** The preview MUST use decimated meshes extracted from Parasolids for performance, but maintain visual fidelity.
@@ -71,5 +92,7 @@
 > **Implementation:**
 > 1. Use interface abstractions to decouple from SolidWorks COM.
 > 2. Mock layer loads from JSON fixtures for headless testing.
-> 3. Unit tests use `[Category("Unit")]`, integration tests use `[Category("RequiresSW")]`.
-> 4. Agent can run: `.\packages\NUnit.ConsoleRunner.3.16.3\tools\nunit3-console.exe .\SolidLink.Tests\bin\x64\Debug\SolidLink.Tests.dll --where "cat==Unit"`
+> 3. All core transforms and URDF outputs must be deterministic.
+> 4. Unit tests use `[Category("Unit")]`, integration tests use `[Category("RequiresSW")]`.
+> 5. Agent can run: `.\packages\NUnit.ConsoleRunner.3.16.3\tools\nunit3-console.exe .\SolidLink.Tests\bin\x64\Debug\SolidLink.Tests.dll --where "cat==Unit"`
+> 6. Bridge messages should be recordable and replayable for diff-based checks.
