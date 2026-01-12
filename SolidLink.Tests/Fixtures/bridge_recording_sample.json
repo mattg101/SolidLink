@@ -1,0 +1,24 @@
+{
+  "messages": [
+    {
+      "timestampUtc": "2026-01-12T15:46:06.4360726+00:00",
+      "direction": "outbound",
+      "type": "AUTH",
+      "correlationId": "db81374a-6c86-4377-ad0c-bb289e87c692",
+      "payload": {
+        "user": "demo",
+        "token": "[REDACTED]"
+      }
+    },
+    {
+      "timestampUtc": "2026-01-12T15:46:06.444092+00:00",
+      "direction": "inbound",
+      "type": "AUTH_OK",
+      "correlationId": "9e0e8446-0bb8-4957-97ac-bb9796f0e223",
+      "payload": {
+        "accessToken": "[REDACTED]",
+        "status": "ok"
+      }
+    }
+  ]
+}
