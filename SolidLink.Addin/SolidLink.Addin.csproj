@@ -88,6 +88,11 @@
     <Compile Include="Services\GeometryExtractor.cs" />
     <Compile Include="Services\DiagnosticLogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Abstractions\ISolidWorksContext.cs" />
+    <Compile Include="Abstractions\IModelDocument.cs" />
+    <Compile Include="Abstractions\IComponent.cs" />
+    <Compile Include="Abstractions\IConfiguration.cs" />
+    <Compile Include="Abstractions\IBody.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="UI\SolidLinkWindow.xaml">
