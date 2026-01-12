@@ -29,10 +29,10 @@ jobs:
         run: nuget restore SolidLink.sln
 
       - name: Build
-        run: msbuild SolidLink.sln /p:Configuration=Release
+        run: msbuild SolidLink.Tests/SolidLink.Tests.csproj /p:Configuration=Debug /p:BuildProjectReferences=false
 
       - name: Run Unit Tests (No SolidWorks)
-        run: dotnet test SolidLink.Tests/SolidLink.Tests.csproj --filter "Category!=RequiresSW"
+        run: dotnet test SolidLink.Tests/SolidLink.Tests.csproj --filter "Category!=RequiresSW" --configuration Debug --no-build /p:BuildProjectReferences=false
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20.11.1"
+          node-version: "20.19.0"
           cache: "npm"
           cache-dependency-path: SolidLink.UI/package-lock.json
 
