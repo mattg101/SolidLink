@@ -32,52 +32,52 @@ All tooling lives **within the SolidLink repository** at `SolidLink/`:
 
 ```
 SolidLink/                          # Root of SolidLink repo
-├── .git/                           # SolidLink's own Git repo
-├── .github/
-│   └── workflows/
-│       └── solidlink-tests.yml     # [NEW] CI workflow
-├── docs/
-│   └── solidlink-agent-dev-spec.md # This file
-├── SolidLink.sln                   # Solution file
-├── SolidLink.Addin/                # C# Add-in project
-│   ├── Abstractions/               # [NEW] Interface definitions
-│   │   ├── ISolidWorksContext.cs
-│   │   ├── IModelDocument.cs
-│   │   ├── IComponent.cs
-│   │   └── IBody.cs
-│   ├── Bridge/
-│   ├── Model/
-│   ├── Services/
-│   ├── Tools/                      # [NEW] FixtureExporter
-│   │   └── FixtureExporter.cs
-│   └── UI/
-├── SolidLink.Tests/                # [NEW] Test project
-│   ├── SolidLink.Tests.csproj
-│   ├── Fixtures/                   # JSON test data
-│   │   ├── assembly_simple.json
-│   │   ├── assembly_nested.json
-│   │   └── ...
-│   ├── Mocks/                      # Mock implementations
-│   │   ├── MockSolidWorksContext.cs
-│   │   ├── MockModelDocument.cs
-│   │   └── ...
-│   ├── Unit/                       # Unit tests (no SW)
-│   │   ├── TreeTraverserTests.cs
-│   │   └── ...
-│   └── Integration/                # Integration tests (require SW)
-│       └── SolidWorksSmoke.cs
-├── SolidLink.UI/                   # React/Three.js frontend
-│   ├── src/
-│   │   ├── test/                   # [NEW] Frontend test utilities
-│   │   │   └── MockBridgeServer.ts
-│   │   └── ...
-│   ├── e2e/                        # [NEW] Playwright tests
-│   │   └── viewport.spec.ts
-│   └── playwright.config.ts
-├── scripts/
-│   ├── register.ps1
-│   └── nuget.exe
-└── packages/
+Γö£ΓöÇΓöÇ .git/                           # SolidLink's own Git repo
+Γö£ΓöÇΓöÇ .github/
+Γöé   ΓööΓöÇΓöÇ workflows/
+Γöé       ΓööΓöÇΓöÇ solidlink-tests.yml     # [NEW] CI workflow
+Γö£ΓöÇΓöÇ docs/
+Γöé   ΓööΓöÇΓöÇ solidlink-agent-dev-spec.md # This file
+Γö£ΓöÇΓöÇ SolidLink.sln                   # Solution file
+Γö£ΓöÇΓöÇ SolidLink.Addin/                # C# Add-in project
+Γöé   Γö£ΓöÇΓöÇ Abstractions/               # [NEW] Interface definitions (missing in this repo snapshot)
+Γöé   Γöé   Γö£ΓöÇΓöÇ ISolidWorksContext.cs
+Γöé   Γöé   Γö£ΓöÇΓöÇ IModelDocument.cs
+Γöé   Γöé   Γö£ΓöÇΓöÇ IComponent.cs
+Γöé   Γöé   ΓööΓöÇΓöÇ IBody.cs
+Γöé   Γö£ΓöÇΓöÇ Bridge/
+Γöé   Γö£ΓöÇΓöÇ Model/
+Γöé   Γö£ΓöÇΓöÇ Services/
+Γöé   Γö£ΓöÇΓöÇ Tools/                      # [NEW] FixtureExporter
+Γöé   Γöé   ΓööΓöÇΓöÇ FixtureExporter.cs
+Γöé   ΓööΓöÇΓöÇ UI/
+Γö£ΓöÇΓöÇ SolidLink.Tests/                # [NEW] Test project
+Γöé   Γö£ΓöÇΓöÇ SolidLink.Tests.csproj
+Γöé   Γö£ΓöÇΓöÇ Fixtures/                   # JSON test data
+Γöé   Γöé   Γö£ΓöÇΓöÇ assembly_simple.json
+Γöé   Γöé   Γö£ΓöÇΓöÇ assembly_nested.json
+Γöé   Γöé   ΓööΓöÇΓöÇ ...
+Γöé   Γö£ΓöÇΓöÇ Mocks/                      # Mock implementations
+Γöé   Γöé   Γö£ΓöÇΓöÇ MockSolidWorksContext.cs
+Γöé   Γöé   Γö£ΓöÇΓöÇ MockModelDocument.cs
+Γöé   Γöé   ΓööΓöÇΓöÇ ...
+Γöé   Γö£ΓöÇΓöÇ Unit/                       # Unit tests (no SW)
+Γöé   Γöé   Γö£ΓöÇΓöÇ TreeTraverserTests.cs
+Γöé   Γöé   ΓööΓöÇΓöÇ ...
+Γöé   ΓööΓöÇΓöÇ Integration/                # Integration tests (require SW)
+Γöé       ΓööΓöÇΓöÇ SolidWorksSmoke.cs
+Γö£ΓöÇΓöÇ SolidLink.UI/                   # React/Three.js frontend
+Γöé   Γö£ΓöÇΓöÇ src/
+Γöé   Γöé   Γö£ΓöÇΓöÇ test/                   # [NEW] Frontend test utilities
+Γöé   Γöé   Γöé   ΓööΓöÇΓöÇ MockBridgeServer.ts
+Γöé   Γöé   ΓööΓöÇΓöÇ ...
+Γöé   Γö£ΓöÇΓöÇ e2e/                        # [NEW] Playwright tests
+Γöé   Γöé   ΓööΓöÇΓöÇ viewport.spec.ts
+Γöé   ΓööΓöÇΓöÇ playwright.config.ts
+Γö£ΓöÇΓöÇ scripts/
+Γöé   Γö£ΓöÇΓöÇ register.ps1
+Γöé   ΓööΓöÇΓöÇ nuget.exe
+ΓööΓöÇΓöÇ packages/
 ```
 
 ---
@@ -137,7 +137,7 @@ graph TB
 
 ### 4.1. Interface Abstractions
 
-Create interfaces that abstract SolidWorks COM objects. These live in `SolidLink.Addin/Abstractions/`.
+Create interfaces that abstract SolidWorks COM objects. These are expected in `SolidLink.Addin/Abstractions/`, but the files are missing in this repo snapshot.
 
 #### [NEW] `SolidLink.Addin/Abstractions/ISolidWorksContext.cs`
 
@@ -309,24 +309,24 @@ public TreeTraverser(ISolidWorksContext context)
 
 ```
 SolidLink.Tests/
-├── SolidLink.Tests.csproj
-├── Fixtures/
-│   ├── assembly_simple.json
-│   ├── assembly_nested.json
-│   ├── part_single_body.json
-│   └── assembly_with_coordsys.json
-├── Mocks/
-│   ├── MockSolidWorksContext.cs
-│   ├── MockModelDocument.cs
-│   ├── MockComponent.cs
-│   └── MockBody.cs
-├── Unit/
-│   ├── TreeTraverserTests.cs
-│   ├── GeometryExtractorTests.cs
-│   ├── MessageBridgeTests.cs
-│   └── RobotModelBuilderTests.cs
-└── Integration/
-    └── SolidWorksSmoke.cs  // [Category("RequiresSW")]
+Γö£ΓöÇΓöÇ SolidLink.Tests.csproj
+Γö£ΓöÇΓöÇ Fixtures/
+Γöé   Γö£ΓöÇΓöÇ assembly_simple.json
+Γöé   Γö£ΓöÇΓöÇ assembly_nested.json
+Γöé   Γö£ΓöÇΓöÇ part_single_body.json
+Γöé   ΓööΓöÇΓöÇ assembly_with_coordsys.json
+Γö£ΓöÇΓöÇ Mocks/
+Γöé   Γö£ΓöÇΓöÇ MockSolidWorksContext.cs
+Γöé   Γö£ΓöÇΓöÇ MockModelDocument.cs
+Γöé   Γö£ΓöÇΓöÇ MockComponent.cs
+Γöé   ΓööΓöÇΓöÇ MockBody.cs
+Γö£ΓöÇΓöÇ Unit/
+Γöé   Γö£ΓöÇΓöÇ TreeTraverserTests.cs
+Γöé   Γö£ΓöÇΓöÇ GeometryExtractorTests.cs
+Γöé   Γö£ΓöÇΓöÇ MessageBridgeTests.cs
+Γöé   ΓööΓöÇΓöÇ RobotModelBuilderTests.cs
+ΓööΓöÇΓöÇ Integration/
+    ΓööΓöÇΓöÇ SolidWorksSmoke.cs  // [Category("RequiresSW")]
 ```
 
 ---

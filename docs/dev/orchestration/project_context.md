@@ -16,12 +16,20 @@ This file defines the **Technical Context** for the generic SOPs. All agents mus
 -   **Type Safety:** Strict static typing (C#) and Strict TypeScript.
 -   **Error Handling:** Mandatory `try/catch` around SW API calls.
 -   **Memory Management:** Explicitly release COM objects.
+## Agent-First Ground Rules
+-   **Deterministic Outputs:** All core transforms, URDF, and JSON bridge payloads must be stable and diffable.
+-   **Replayable Sessions:** Any bridge interaction should be recordable and replayable without SolidWorks.
+-   **Headless First:** If a behavior cannot be tested headlessly, add a mockable seam before adding UI-only logic.
+## Roadmap Definitions
+-   **Exit Criteria:** The concrete condition that marks a task complete and shippable.
+-   **Artifacts:** The files or outputs that must exist to satisfy the task.
+-   **Test Gate:** The automated check that must pass before merging.
 
 ## Architecture Specifics
 -   **Bridge Pattern:** All UI/Backend communication occurs via async JSON messages.
 -   **Threading:** SolidWorks API on Main Thread; UI on WebView2 Process.
 -   **Frontend:** Functional React components + Hooks.
--   **Abstraction Layer:** `SolidLink.Addin/Abstractions/` contains interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) that abstract SolidWorks COM types for dependency injection and testing.
+-   **Abstraction Layer:** Interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) are expected in `SolidLink.Addin/Abstractions/`, but those files are not present in this repo snapshot; update the path once restored.
 
 ## Known Pitfalls (Self-Annealed)
 -   **WebView2 Permissions:** Must explicitly set `UserDataFolder` to `%LOCALAPPDATA%` to avoid `AccessDenied`.
@@ -45,6 +53,7 @@ This file defines the **Technical Context** for the generic SOPs. All agents mus
         .\packages\NUnit.ConsoleRunner.3.16.3\tools\nunit3-console.exe .\SolidLink.Tests\bin\x64\Debug\SolidLink.Tests.dll --where "cat==Unit"
         ```
     -   *Integration:* Manual verification in SolidWorks (Task Panes, Property Pages). Use `[Category("RequiresSW")]` for tests that need SolidWorks.
+    -   *Agent Regression:* Prefer golden snapshots and bridge replays for diffs before UI runs.
 -   **Deploy:** Generate `.msi` via WiX.
 -   **Design Spec:** See `SolidLink/docs/solidlink-agent-dev-spec.md` for agent-friendly development toolchain details.
 

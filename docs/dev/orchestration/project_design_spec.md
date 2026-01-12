@@ -7,7 +7,7 @@ The SolidLink Plugin follows a **Hybrid Bridge Architecture** between a C# Solid
 - **Backend (C# .NET 4.8):** Hosts the SolidWorks COM connection, performs geometry extraction (Parasolid tessellation), and manages the lifecycle of the WebView2 windows.
 - **Frontend (React/Three.js):** Provides a high-performance 3D rendering environment and the configuration GUI.
 - **Communication:** Bi-directional JSON bridge via `WebView2.CoreWebView2.PostWebMessageAsJson` and `window.chrome.webview.addEventListener`.
-- **Abstraction Layer:** `SolidLink.Addin/Abstractions/` contains interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) that abstract SolidWorks COM types for dependency injection and testing.
+- **Abstraction Layer:** Interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) are expected in `SolidLink.Addin/Abstractions/`, but those files are not present in this repo snapshot; update the path once restored.
 
 ## 2. Core Data Models
 
@@ -39,10 +39,21 @@ The SolidLink Plugin follows a **Hybrid Bridge Architecture** between a C# Solid
 - **Observer:** React components re-render based on updates from the C# bridge.
 - **Dependency Injection:** Services accept interface abstractions for testability.
 
-## 5. Agent-Friendly Development Automation
+## 5. Agent-First Development Automation
 
 > [!IMPORTANT]
 > See [solidlink-agent-dev-spec.md](../solidlink-agent-dev-spec.md) for full details.
+
+### Agent-First Principles
+- **Determinism First:** JSON bridge messages, transforms, and URDF outputs must be stable and diffable.
+- **Replayability:** Capture bridge traffic so agents can replay sessions without SolidWorks.
+- **Headless Verification:** Validate geometry metadata and hierarchy shape without UI inspection.
+
+### Roadmap Milestones (Agent-First)
+- **Headless CLI Harness:** Single entrypoint that runs mock extraction and produces a JSON report plus snapshot diff.
+- **Snapshot Schema:** Canonical ordering and float rounding rules for stable diffs.
+- **Golden Baselines:** At least two fixture assemblies with committed snapshots.
+- **Bridge Replay:** Record mode produces replay files; replay mode yields identical snapshots.
 
 ### Testing Pipeline (No SolidWorks Required)
 
@@ -51,6 +62,8 @@ The SolidLink Plugin follows a **Hybrid Bridge Architecture** between a C# Solid
 | **Abstractions** | C# Interfaces | Decouple from COM |
 | **Mocks** | JSON Fixtures + Mock Classes | Test data injection |
 | **Unit Tests** | NUnit 3.14.0 + Moq | Headless verification |
+| **Golden Snapshots** | JSON / text fixtures | Diff-based regression checks |
+| **Bridge Replays** | JSON recordings | Deterministic agent runs |
 | **Frontend Tests** | Vitest + Playwright | E2E without backend |
 
 ### Agent Test Command
@@ -65,6 +78,8 @@ cd SolidLink
 | File | Purpose |
 |------|---------|
 | `SolidLink.Tests/Fixtures/*.json` | Mock assembly data |
+| `SolidLink.Tests/Fixtures/*snapshot*.json` | Golden regression snapshots |
+| `SolidLink.Tests/Fixtures/*recording*.json` | Bridge replays |
 | `SolidLink.Tests/Mocks/*.cs` | Mock implementations |
 | `SolidLink.Tests/Unit/*.cs` | Unit tests (no SW) |
 | `SolidLink.Tests/Integration/*.cs` | Integration tests (`[Category("RequiresSW")]`) |
