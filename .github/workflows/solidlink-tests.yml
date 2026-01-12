@@ -28,11 +28,8 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore SolidLink.sln
 
-      - name: Build
-        run: msbuild SolidLink.Tests/SolidLink.Tests.csproj /p:Configuration=Debug /p:BuildProjectReferences=false
-
       - name: Run Unit Tests (No SolidWorks)
-        run: dotnet test SolidLink.Tests/SolidLink.Tests.csproj --filter "Category!=RequiresSW" --configuration Debug --no-build /p:BuildProjectReferences=false
+        run: dotnet test SolidLink.Tests/bin/x64/Debug/SolidLink.Tests.dll --filter "Category!=RequiresSW"
 
   frontend-tests:
     runs-on: ubuntu-latest
