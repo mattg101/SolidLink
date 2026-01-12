@@ -4,7 +4,7 @@ using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
 using SolidLink.Addin.Adapters;
-using SolidLink.Addin.Abstractions;
+using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 
 namespace SolidLink.Addin.Tools
@@ -40,7 +40,7 @@ namespace SolidLink.Addin.Tools
             File.WriteAllText(outputPath, json);
         }
 
-        internal FixtureData BuildFixture(IModelDocument model)
+        internal FixtureData BuildFixture(Abstractions.IModelDocument model)
         {
             var fixture = new FixtureData
             {
@@ -58,7 +58,7 @@ namespace SolidLink.Addin.Tools
             return fixture;
         }
 
-        private ComponentFixture BuildComponentFixture(IComponent component)
+        private ComponentFixture BuildComponentFixture(Abstractions.IComponent component)
         {
             var fixture = new ComponentFixture
             {
@@ -77,7 +77,7 @@ namespace SolidLink.Addin.Tools
                 fixture.Children.Add(BuildComponentFixture(child));
             }
 
-            foreach (var reference in component.ReferenceFrames ?? Enumerable.Empty<IReferenceFrame>())
+            foreach (var reference in component.ReferenceFrames ?? Enumerable.Empty<Abstractions.IReferenceFrame>())
             {
                 fixture.ReferenceFrames.Add(new ReferenceFrameFixture
                 {
@@ -90,7 +90,7 @@ namespace SolidLink.Addin.Tools
             return fixture;
         }
 
-        private BodyFixture BuildBodyFixture(IBody body)
+        private BodyFixture BuildBodyFixture(Abstractions.IBody body)
         {
             var tessellation = new List<float>();
             foreach (var face in body.Faces)

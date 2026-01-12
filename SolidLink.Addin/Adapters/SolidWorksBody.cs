@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using SolidLink.Addin.Abstractions;
+using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 
 namespace SolidLink.Addin.Adapters
@@ -8,10 +8,10 @@ namespace SolidLink.Addin.Adapters
     /// <summary>
     /// Adapter for SolidWorks Body2.
     /// </summary>
-    public class SolidWorksBody : IBody, IDisposable
+    public class SolidWorksBody : Abstractions.IBody, IDisposable
     {
         private readonly Body2 _body;
-        private List<IFace> _faces;
+        private List<Abstractions.IFace> _faces;
         private bool _disposed;
 
         public SolidWorksBody(Body2 body)
@@ -21,7 +21,7 @@ namespace SolidLink.Addin.Adapters
 
         public string Name => ComHelpers.SafeCall(() => _body?.Name ?? "(Unnamed)", "(Unnamed)");
 
-        public IEnumerable<IFace> Faces
+        public IEnumerable<Abstractions.IFace> Faces
         {
             get
             {
@@ -30,7 +30,7 @@ namespace SolidLink.Addin.Adapters
                     return _faces;
                 }
 
-                _faces = new List<IFace>();
+                _faces = new List<Abstractions.IFace>();
                 ComHelpers.SafeCall(() =>
                 {
                     var faces = _body?.GetFaces() as object[];
@@ -81,7 +81,7 @@ namespace SolidLink.Addin.Adapters
     /// <summary>
     /// Adapter for SolidWorks Face2.
     /// </summary>
-    public class SolidWorksFace : IFace, IDisposable
+    public class SolidWorksFace : Abstractions.IFace, IDisposable
     {
         private readonly Face2 _face;
         private bool _disposed;

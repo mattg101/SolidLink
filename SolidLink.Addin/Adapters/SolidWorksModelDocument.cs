@@ -1,5 +1,5 @@
 using System;
-using SolidLink.Addin.Abstractions;
+using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 
@@ -8,10 +8,10 @@ namespace SolidLink.Addin.Adapters
     /// <summary>
     /// Adapter for SolidWorks ModelDoc2.
     /// </summary>
-    public class SolidWorksModelDocument : IModelDocument, IDisposable
+    public class SolidWorksModelDocument : Abstractions.IModelDocument, IDisposable
     {
         private readonly ModelDoc2 _model;
-        private IConfiguration _activeConfiguration;
+        private Abstractions.IConfiguration _activeConfiguration;
         private bool _disposed;
 
         public SolidWorksModelDocument(ModelDoc2 model)
@@ -21,7 +21,7 @@ namespace SolidLink.Addin.Adapters
 
         public string Title => ComHelpers.SafeCall(() => _model.GetTitle(), string.Empty);
 
-        public DocumentType Type
+        public Abstractions.DocumentType Type
         {
             get
             {
@@ -30,19 +30,19 @@ namespace SolidLink.Addin.Adapters
                     switch ((swDocumentTypes_e)_model.GetType())
                     {
                         case swDocumentTypes_e.swDocASSEMBLY:
-                            return DocumentType.Assembly;
+                            return Abstractions.DocumentType.Assembly;
                         case swDocumentTypes_e.swDocPART:
-                            return DocumentType.Part;
+                            return Abstractions.DocumentType.Part;
                         case swDocumentTypes_e.swDocDRAWING:
-                            return DocumentType.Drawing;
+                            return Abstractions.DocumentType.Drawing;
                         default:
-                            return DocumentType.Assembly;
+                            return Abstractions.DocumentType.Assembly;
                     }
-                }, DocumentType.Assembly);
+                }, Abstractions.DocumentType.Assembly);
             }
         }
 
-        public IConfiguration ActiveConfiguration => _activeConfiguration
+        public Abstractions.IConfiguration ActiveConfiguration => _activeConfiguration       
             ?? (_activeConfiguration = ComHelpers.SafeCall(() => new SolidWorksConfiguration(_model)));
 
         public double UnitToMeters => UnitConversionHelper.GetUnitConversionFactor(_model);
