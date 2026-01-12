@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidLink.Addin", "SolidLin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidLink.Tests", "SolidLink.Tests\SolidLink.Tests.csproj", "{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidLink.Headless", "SolidLink.Headless\SolidLink.Headless.csproj", "{2E6E0F2B-6E8D-4A53-9B50-DB85E7B5BE91}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -19,9 +21,13 @@ Global
 		{473A16EC-06E9-4C08-B6EF-9AF0036B69E6}.Release|x64.Build.0 = Release|x64
 		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Debug|x64.ActiveCfg = Debug|x64
 		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Debug|x64.Build.0 = Debug|x64
-		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Release|x64.ActiveCfg = Release|x64
-		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Release|x64.Build.0 = Release|x64
-	EndGlobalSection
+                {8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Release|x64.ActiveCfg = Release|x64
+                {8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Release|x64.Build.0 = Release|x64
+                {2E6E0F2B-6E8D-4A53-9B50-DB85E7B5BE91}.Debug|x64.ActiveCfg = Debug|x64
+                {2E6E0F2B-6E8D-4A53-9B50-DB85E7B5BE91}.Debug|x64.Build.0 = Debug|x64
+                {2E6E0F2B-6E8D-4A53-9B50-DB85E7B5BE91}.Release|x64.ActiveCfg = Release|x64
+                {2E6E0F2B-6E8D-4A53-9B50-DB85E7B5BE91}.Release|x64.Build.0 = Release|x64
+        EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
