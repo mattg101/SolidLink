@@ -76,6 +76,12 @@
   <ItemGroup>
     <Compile Include="SwAddin.cs" />
     <Compile Include="Bridge\BridgeMessage.cs" />
+    <Compile Include="Bridge\BridgeMessageEventArgs.cs" />
+    <Compile Include="Bridge\BridgeRecording.cs" />
+    <Compile Include="Bridge\BridgeRecordingEntry.cs" />
+    <Compile Include="Bridge\BridgeRecorder.cs" />
+    <Compile Include="Bridge\BridgeReplayer.cs" />
+    <Compile Include="Bridge\InMemoryWebViewBridge.cs" />
     <Compile Include="Bridge\CoreWebView2BridgeAdapter.cs" />
     <Compile Include="Bridge\IWebViewBridge.cs" />
     <Compile Include="Bridge\MessageBridge.cs" />
