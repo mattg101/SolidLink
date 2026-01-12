@@ -14,7 +14,9 @@ namespace SolidLink.Addin.Bridge
 
         public CoreWebView2BridgeAdapter(CoreWebView2 coreWebView)
         {
-            _coreWebView = coreWebView ?? throw new ArgumentNullException(nameof(coreWebView));
+            if (coreWebView == null)
+                throw new ArgumentNullException("coreWebView");
+            _coreWebView = coreWebView;
             _coreWebView.WebMessageReceived += OnWebMessageReceived;
         }
 
@@ -34,7 +36,8 @@ namespace SolidLink.Addin.Bridge
 
         private void OnWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
-            WebMessageReceivedJson?.Invoke(this, e.WebMessageAsJson);
+            if (WebMessageReceivedJson != null)
+                WebMessageReceivedJson(this, e.WebMessageAsJson);
         }
     }
 }
