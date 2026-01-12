@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.31729.503
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidLink.Addin", "SolidLink.Addin\SolidLink.Addin.csproj", "{473A16EC-06E9-4C08-B6EF-9AF0036B69E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidLink.Tests", "SolidLink.Tests\SolidLink.Tests.csproj", "{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{473A16EC-06E9-4C08-B6EF-9AF0036B69E6}.Debug|x64.Build.0 = Debug|x64
 		{473A16EC-06E9-4C08-B6EF-9AF0036B69E6}.Release|x64.ActiveCfg = Release|x64
 		{473A16EC-06E9-4C08-B6EF-9AF0036B69E6}.Release|x64.Build.0 = Release|x64
+		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Debug|x64.ActiveCfg = Debug|x64
+		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Debug|x64.Build.0 = Debug|x64
+		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Release|x64.ActiveCfg = Release|x64
+		{8B3F5A1C-2D9E-4F8A-B1C7-6E4D2F9A3B5C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

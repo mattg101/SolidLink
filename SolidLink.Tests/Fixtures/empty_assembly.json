@@ -1,0 +1,13 @@
+{
+  "title": "EmptyAssembly",
+  "type": "Assembly",
+  "unitToMeters": 0.001,
+  "rootComponent": {
+    "name": "Root",
+    "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    "materialColor": [0.8, 0.8, 0.8, 1.0],
+    "bodies": [],
+    "children": [],
+    "referenceFrames": []
+  }
+}

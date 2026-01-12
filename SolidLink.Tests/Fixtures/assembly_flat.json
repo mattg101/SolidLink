@@ -1,0 +1,38 @@
+{
+  "title": "FlatAssembly",
+  "type": "Assembly",
+  "unitToMeters": 0.001,
+  "rootComponent": {
+    "name": "Root-1",
+    "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    "materialColor": [0.7, 0.7, 0.7, 1.0],
+    "bodies": [],
+    "children": [
+      {
+        "name": "Comp-A",
+        "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0, 0, 1],
+        "materialColor": [0.2, 0.6, 0.8, 1.0],
+        "bodies": [
+          {
+            "name": "Body-A",
+            "tessellation": [0, 0, 0, 1, 0, 0, 0, 1, 0]
+          }
+        ],
+        "children": []
+      },
+      {
+        "name": "Comp-B",
+        "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0, 1],
+        "materialColor": [0.9, 0.5, 0.2, 1.0],
+        "bodies": [
+          {
+            "name": "Body-B",
+            "tessellation": [0, 0, 0, 0, 1, 0, 0, 0, 1]
+          }
+        ],
+        "children": []
+      }
+    ],
+    "referenceFrames": []
+  }
+}
