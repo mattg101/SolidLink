@@ -20,8 +20,11 @@ namespace SolidLink.Addin.Adapters
         {
             get
             {
-                var model = _swApp.ActiveDoc as ModelDoc2;
-                return model == null ? null : new SolidWorksModelDocument(model);
+                return ComHelpers.SafeCall(() =>
+                {
+                    var model = _swApp.ActiveDoc as ModelDoc2;
+                    return model == null ? null : new SolidWorksModelDocument(model);
+                });
             }
         }
 
