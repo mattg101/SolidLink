@@ -1,8 +1,8 @@
 # SolidLink Development Handoff
 
 ## Current Project Status
-**Phase:** Phase 2 - Robot Tree Extraction & Visualization (Near Complete)  
-**Date:** 2026-01-06
+**Phase:** Phase 2 - Robot Tree Extraction & Visualization (Complete)  
+**Date:** 2026-01-12
 
 ## What Has Been Accomplished
 
@@ -17,6 +17,10 @@
 - [x] Tree Filtering and Selection (UI side)
 - [x] React Three Fiber integration for 3D Viewport
 - [x] Basic Mesh Tessellation in C# for preview
+- [x] Headless CLI harness + reporting
+- [x] Snapshot schema normalization + diff tooling
+- [x] Golden snapshot fixtures and regression tests
+- [x] Bridge record/replay with fixtures + unit coverage
 - [x] **3D Alignment Fix** - Completed!
   - Fixed rotation matrix interpretation (transpose rows→columns)
   - Fixed nested transform hierarchy (flatten to absolute transforms)
@@ -41,12 +45,17 @@
 |-----------|----------|
 | C# Add-in Entry | `SolidLink.Addin/SwAddin.cs` |
 | Tree Traverser | `SolidLink.Addin/Services/TreeTraverser.cs` |
-| Geometry Extractor | `SolidLink.Addin/Services/GeometryExtractor.cs` |
+| Geometry Extractor | `SolidLink.Addin/Services/GeometryExtractor.cs` |        
 | Diagnostic Logger | `SolidLink.Addin/Services/DiagnosticLogger.cs` |
 | Bridge Handler | `SolidLink.Addin/UI/SolidLinkWindow.xaml.cs` |
 | React App | `SolidLink.UI/src/App.tsx` |
 | 3D Viewport | `SolidLink.UI/src/components/Viewport/Viewport.tsx` |
 | UI Logger | `SolidLink.UI/src/utils/logger.ts` |
+| Headless CLI | `SolidLink.Headless/Program.cs` |
+| Snapshot Normalizer | `SolidLink.Headless/SnapshotNormalizer.cs` |
+| Snapshot Comparer | `SolidLink.Headless/SnapshotComparer.cs` |
+| Bridge Recorder | `SolidLink.Addin/Bridge/BridgeRecorder.cs` |
+| Bridge Replayer | `SolidLink.Addin/Bridge/BridgeReplayer.cs` |
 
 ## Development Commands
 
@@ -62,8 +71,9 @@ SolidLinkDebug.enable()
 ```
 
 ## Next Steps
-1. Clean up remaining debug artifacts if any
-2. Implement selection sync between tree and 3D viewport
-3. Begin Phase 3: URDF Export functionality
+1. Sync tree filtering to hide matching geometry in the viewport
+2. Implement hover highlight + multi-select (Ctrl/Shift) across tree and viewport
+3. Add drag-select in viewport with selection propagation back to tree
+4. Begin Phase 3: URDF Export functionality
 
 ---

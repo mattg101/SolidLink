@@ -5,8 +5,8 @@
 | --- | --- |
 | Feature | Headless CLI harness for extraction and snapshot diff |
 | Branch | feat-headless-cli-harness |
-| Status | Draft |
-| Owner | TBD |
+| Status | Implemented |
+| Owner | SolidLink Team |
 | Target Release | TBD |
 
 ## 2. Purpose and Scope (Objective)
@@ -87,7 +87,7 @@
 | Where should reports be versioned or ignored? | TBD | Before implementation |
 
 ## 13. Definition of Done (Architect)
-- [ ] Interface defined
-- [ ] Edge cases mapped
-- [ ] Technical risks identified
-- [ ] CLI harness implemented with report + diff output
+- [x] Interface defined
+- [x] Edge cases mapped
+- [x] Technical risks identified
+- [x] CLI harness implemented with report + diff output

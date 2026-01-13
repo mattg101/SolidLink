@@ -5,8 +5,8 @@
 | --- | --- |
 | Feature | Record and replay JSON bridge traffic |
 | Branch | feat-bridge-record-replay |
-| Status | Draft |
-| Owner | TBD |
+| Status | Implemented |
+| Owner | SolidLink Team |
 | Target Release | TBD |
 
 ## 2. Purpose and Scope (Objective)
@@ -88,7 +88,7 @@
 | Where should record/replay config live? | TBD | Before implementation |
 
 ## 13. Definition of Done (Architect)
-- [ ] Interface defined
-- [ ] Edge cases mapped
-- [ ] Technical risks identified
-- [ ] Record/replay implemented with passing tests
+- [x] Interface defined
+- [x] Edge cases mapped
+- [x] Technical risks identified
+- [x] Record/replay implemented with passing tests

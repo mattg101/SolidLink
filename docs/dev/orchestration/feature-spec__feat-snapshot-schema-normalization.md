@@ -5,8 +5,8 @@
 | --- | --- |
 | Feature | Snapshot schema definition and normalization rules |
 | Branch | feat-snapshot-schema-normalization |
-| Status | Draft |
-| Owner | TBD |
+| Status | Implemented |
+| Owner | SolidLink Team |
 | Target Release | TBD |
 
 ## 2. Purpose and Scope (Objective)
@@ -87,7 +87,7 @@
 | Should arrays be sorted by name or by stable ID? | TBD | Before implementation |
 
 ## 13. Definition of Done (Architect)
-- [ ] Interface defined
-- [ ] Edge cases mapped
-- [ ] Technical risks identified
-- [ ] Schema doc and normalizer implemented with tests
+- [x] Interface defined
+- [x] Edge cases mapped
+- [x] Technical risks identified
+- [x] Schema doc and normalizer implemented with tests

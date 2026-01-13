@@ -5,8 +5,8 @@
 | --- | --- |
 | Feature | Baseline golden snapshots for core assemblies |
 | Branch | feat-golden-snapshots |
-| Status | Draft |
-| Owner | TBD |
+| Status | Implemented |
+| Owner | SolidLink Team |
 | Target Release | TBD |
 
 ## 2. Purpose and Scope (Objective)
@@ -85,7 +85,7 @@
 | Where should snapshot README/provenance live? | TBD | Before implementation |
 
 ## 13. Definition of Done (Architect)
-- [ ] Interface defined
-- [ ] Edge cases mapped
-- [ ] Technical risks identified
-- [ ] Baseline snapshots added with passing regression tests
+- [x] Interface defined
+- [x] Edge cases mapped
+- [x] Technical risks identified
+- [x] Baseline snapshots added with passing regression tests

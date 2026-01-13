@@ -10,5 +10,6 @@
 | 2026-01-06 | directives/developer-sop.md | Fixed 3D Alignment (rotation matrix transpose + flat rendering) |
 | 2026-01-06 | directives/developer-sop.md | Formalized logging infrastructure (C# DiagnosticLogger + TS logger) |
 | 2026-01-06 | directives/tester-sop.md | Created test_report_003.md for PR-003 verification |
+| 2026-01-12 | directives/developer-sop.md | Updated handoff with headless harness, snapshot tooling, and bridge record/replay progress |
 
 
