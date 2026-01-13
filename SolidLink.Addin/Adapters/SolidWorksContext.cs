@@ -1,5 +1,5 @@
 using System;
-using SolidLink.Addin.Abstractions;
+using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 
 namespace SolidLink.Addin.Adapters
@@ -7,7 +7,7 @@ namespace SolidLink.Addin.Adapters
     /// <summary>
     /// Wraps a SolidWorks SldWorks instance with the abstraction layer.
     /// </summary>
-    public class SolidWorksContext : ISolidWorksContext
+    public class SolidWorksContext : Abstractions.ISolidWorksContext
     {
         private readonly SldWorks _swApp;
 
@@ -16,7 +16,7 @@ namespace SolidLink.Addin.Adapters
             _swApp = app ?? throw new ArgumentNullException(nameof(app));
         }
 
-        public IModelDocument ActiveModel
+        public Abstractions.IModelDocument ActiveModel
         {
             get
             {

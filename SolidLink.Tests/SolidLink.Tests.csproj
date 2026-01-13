@@ -73,7 +73,10 @@
     <Compile Include="Unit\TreeTraverserTests.cs" />
     <Compile Include="Unit\GeometryExtractorTests.cs" />
     <Compile Include="Unit\MessageBridgeTests.cs" />
+    <Compile Include="Unit\BridgeRecordReplayTests.cs" />
+    <Compile Include="Unit\SnapshotNormalizerTests.cs" />
     <Compile Include="Integration\SolidWorksSmoke.cs" />
+    <Compile Include="Fixtures\normalize-snapshot.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -107,6 +110,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Fixtures\README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fixtures\bridge_recording_sample.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fixtures\snapshot-schema.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fixtures\snapshots\assembly_simple.snapshot.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

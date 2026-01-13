@@ -19,6 +19,16 @@ namespace SolidLink.Addin.Bridge
         /// </summary>
         public event EventHandler<BridgeMessage> MessageReceived;
 
+        /// <summary>
+        /// Event raised when a message is sent to the frontend.
+        /// </summary>
+        public event EventHandler<BridgeMessageEventArgs> MessageSent;
+
+        /// <summary>
+        /// Event raised when a raw message is received from the frontend.
+        /// </summary>
+        public event EventHandler<BridgeMessageEventArgs> MessageReceivedRaw;
+
         public MessageBridge()
         {
             pendingRequests = new ConcurrentDictionary<string, TaskCompletionSource<BridgeMessage>>();
@@ -43,7 +53,9 @@ namespace SolidLink.Addin.Bridge
                 webView.Dispose();
             }
 
-            webView = webViewBridge ?? throw new ArgumentNullException(nameof(webViewBridge));
+            if (webViewBridge == null)
+                throw new ArgumentNullException("webViewBridge");
+            webView = webViewBridge;
             webView.WebMessageReceivedJson += OnWebMessageReceived;
         }
 
@@ -52,11 +64,22 @@ namespace SolidLink.Addin.Bridge
         /// </summary>
         public void Send(string type, object payload = null)
         {
+            Send(new BridgeMessage(type, payload));
+        }
+
+        /// <summary>
+        /// Send a pre-constructed message to the frontend.
+        /// </summary>
+        public void Send(BridgeMessage message)
+        {
             if (webView == null)
                 throw new InvalidOperationException("MessageBridge not initialized. Call Initialize() first.");
+            if (message == null)
+                throw new ArgumentNullException("message");
 
-            var message = new BridgeMessage(type, payload);
             string json = JsonConvert.SerializeObject(message);
+            if (MessageSent != null)
+                MessageSent(this, new BridgeMessageEventArgs(message, json));
             webView.PostWebMessageAsJson(json);
         }
 
@@ -76,30 +99,30 @@ namespace SolidLink.Addin.Bridge
             if (webView == null)
                 throw new InvalidOperationException("MessageBridge not initialized. Call Initialize() first.");
 
-            var message = new BridgeMessage(type, payload);
-            var tcs = new TaskCompletionSource<BridgeMessage>();
+                var message = new BridgeMessage(type, payload);
+                var tcs = new TaskCompletionSource<BridgeMessage>();
 
             if (!pendingRequests.TryAdd(message.CorrelationId, tcs))
                 throw new InvalidOperationException("Failed to register pending request.");
 
             try
             {
-                string json = JsonConvert.SerializeObject(message);
-                webView.PostWebMessageAsJson(json);
+                Send(message);
 
                 var timeoutTask = Task.Delay(timeoutMs);
                 var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
 
                 if (completedTask == timeoutTask)
                 {
-                    throw new TimeoutException($"Request '{type}' timed out after {timeoutMs}ms.");
+                    throw new TimeoutException(string.Format("Request '{0}' timed out after {1}ms.", type, timeoutMs));
                 }
 
                 return await tcs.Task;
             }
             finally
             {
-                pendingRequests.TryRemove(message.CorrelationId, out _);
+                TaskCompletionSource<BridgeMessage> removed;
+                pendingRequests.TryRemove(message.CorrelationId, out removed);
             }
         }
 
@@ -111,32 +134,52 @@ namespace SolidLink.Addin.Bridge
 
                 if (message == null) return;
 
-                // Check if this is a response to a pending request
-                if (!string.IsNullOrEmpty(message.CorrelationId) &&
-                    pendingRequests.TryGetValue(message.CorrelationId, out var tcs))
-                {
-                    tcs.TrySetResult(message);
-                    return;
-                }
-
-                // Handle known message types
-                switch (message.Type)
-                {
-                    case "PING":
-                        Send("PONG", null);
-                        break;
-                    case "UI_READY":
-                        SendConnectionStatus();
-                        break;
-                    default:
-                        // Raise event for custom handling
-                        MessageReceived?.Invoke(this, message);
-                        break;
-                }
+                if (MessageReceivedRaw != null)
+                    MessageReceivedRaw(this, new BridgeMessageEventArgs(message, json));
+                HandleIncomingMessage(message);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MessageBridge] Error processing message: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine(string.Format("[MessageBridge] Error processing message: {0}", ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Inject a raw JSON message into the bridge.
+        /// </summary>
+        public void ReceiveJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                throw new ArgumentException("JSON payload is required.", "json");
+
+            OnWebMessageReceived(this, json);
+        }
+
+        private void HandleIncomingMessage(BridgeMessage message)
+        {
+            // Check if this is a response to a pending request
+            TaskCompletionSource<BridgeMessage> tcs;
+            if (!string.IsNullOrEmpty(message.CorrelationId) &&
+                pendingRequests.TryGetValue(message.CorrelationId, out tcs))
+            {
+                tcs.TrySetResult(message);
+                return;
+            }
+
+            // Handle known message types
+            switch (message.Type)
+            {
+                case "PING":
+                    Send("PONG", null);
+                    break;
+                case "UI_READY":
+                    SendConnectionStatus();
+                    break;
+                default:
+                    // Raise event for custom handling
+                    if (MessageReceived != null)
+                        MessageReceived(this, message);
+                    break;
             }
         }
 

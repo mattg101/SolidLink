@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SolidLink.Addin.Abstractions;
+using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 using IBody = SolidLink.Addin.Abstractions.IBody;
@@ -14,17 +14,17 @@ namespace SolidLink.Addin.Adapters
     /// <summary>
     /// Adapter for SolidWorks Component2.
     /// </summary>
-    public class SolidWorksComponent : IComponent, IDisposable
+    public class SolidWorksComponent : Abstractions.IComponent, IDisposable
     {
         private readonly Component2 _component;
-        private readonly IComponent _parent;
-        private List<IComponent> _children;
-        private List<IBody> _bodies;
-        private List<IReferenceFrame> _referenceFrames;
-        private IModelDocument _modelDoc;
+        private readonly Abstractions.IComponent _parent;
+        private List<Abstractions.IComponent> _children;
+        private List<Abstractions.IBody> _bodies;
+        private List<Abstractions.IReferenceFrame> _referenceFrames;
+        private Abstractions.IModelDocument _modelDoc;
         private bool _disposed;
 
-        public SolidWorksComponent(Component2 component, IComponent parent)
+        public SolidWorksComponent(Component2 component, Abstractions.IComponent parent)
         {
             _component = component;
             _parent = parent;
@@ -32,9 +32,9 @@ namespace SolidLink.Addin.Adapters
 
         public string Name => ComHelpers.SafeCall(() => _component?.Name2 ?? "(Unnamed)", "(Unnamed)");
 
-        public IComponent Parent => _parent;
+        public Abstractions.IComponent Parent => _parent;
 
-        public IEnumerable<IComponent> Children
+        public IEnumerable<Abstractions.IComponent> Children
         {
             get
             {
@@ -46,14 +46,14 @@ namespace SolidLink.Addin.Adapters
                 _children = ComHelpers.SafeCall(() =>
                 {
                     var children = _component?.GetChildren() as object[];
-                    return children?.Select(c => (IComponent)new SolidWorksComponent((Component2)c, this)).ToList()
-                        ?? new List<IComponent>();
-                }, new List<IComponent>());
+                    return children?.Select(c => (Abstractions.IComponent)new SolidWorksComponent((Component2)c, this)).ToList()
+                        ?? new List<Abstractions.IComponent>();
+                }, new List<Abstractions.IComponent>());
                 return _children;
             }
         }
 
-        public IModelDocument ModelDoc
+        public Abstractions.IModelDocument ModelDoc
         {
             get
             {
@@ -92,7 +92,7 @@ namespace SolidLink.Addin.Adapters
             }
         }
 
-        public IEnumerable<IBody> Bodies
+        public IEnumerable<Abstractions.IBody> Bodies
         {
             get
             {
@@ -101,7 +101,7 @@ namespace SolidLink.Addin.Adapters
                     return _bodies;
                 }
 
-                _bodies = new List<IBody>();
+                _bodies = new List<Abstractions.IBody>();
                 ModelDoc2 modelDoc = null;
                 try
                 {
@@ -147,7 +147,7 @@ namespace SolidLink.Addin.Adapters
             }
         }
 
-        public IEnumerable<IReferenceFrame> ReferenceFrames
+        public IEnumerable<Abstractions.IReferenceFrame> ReferenceFrames
         {
             get
             {
@@ -156,7 +156,7 @@ namespace SolidLink.Addin.Adapters
                     return _referenceFrames;
                 }
 
-                _referenceFrames = new List<IReferenceFrame>();
+                _referenceFrames = new List<Abstractions.IReferenceFrame>();
                 ModelDoc2 modelDoc = null;
                 Feature feature = null;
                 try

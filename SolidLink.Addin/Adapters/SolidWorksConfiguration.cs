@@ -1,5 +1,5 @@
 using System;
-using SolidLink.Addin.Abstractions;
+using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 using IComponent = SolidLink.Addin.Abstractions.IComponent;
@@ -10,11 +10,11 @@ namespace SolidLink.Addin.Adapters
     /// <summary>
     /// Adapter for SolidWorks Configuration.
     /// </summary>
-    public class SolidWorksConfiguration : IConfiguration, IDisposable
+    public class SolidWorksConfiguration : Abstractions.IConfiguration, IDisposable
     {
         private readonly ModelDoc2 _model;
         private readonly Configuration _configuration;
-        private IComponent _rootComponent;
+        private Abstractions.IComponent _rootComponent;
         private bool _disposed;
 
         public SolidWorksConfiguration(ModelDoc2 model)
@@ -25,7 +25,7 @@ namespace SolidLink.Addin.Adapters
 
         public string Name => ComHelpers.SafeCall(() => _configuration?.Name ?? "Default", "Default");
 
-        public IComponent RootComponent
+        public Abstractions.IComponent RootComponent
         {
             get
             {
