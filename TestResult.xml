@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-run id="0" runstate="Runnable" testcasecount="6" result="Passed" total="6" passed="6" failed="0" warnings="0" inconclusive="0" skipped="0" asserts="21" engine-version="3.16.3.0" clr-version="4.0.30319.42000" start-time="2026-01-12 14:17:49Z" end-time="2026-01-12 14:17:50Z" duration="0.990760">
+  <command-line><![CDATA["C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\packages\NUnit.ConsoleRunner.3.16.3\tools\nunit3-console.exe" .\SolidLink.Tests\bin\x64\Debug\SolidLink.Tests.dll --where cat==Unit]]></command-line>
+  <filter>
+    <cat>Unit</cat>
+  </filter>
+  <test-suite type="Assembly" id="1-1007" name="SolidLink.Tests.dll" fullname="C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\SolidLink.Tests\bin\x64\Debug\SolidLink.Tests.dll" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-01-12T14:17:50.3440702Z" end-time="2026-01-12T14:17:50.7030754Z" duration="0.359141" total="6" passed="6" failed="0" warnings="0" inconclusive="0" skipped="0" asserts="21">
+    <environment framework-version="3.14.0.0" clr-version="4.0.30319.42000" os-version="Microsoft Windows NT 10.0.26200.0" platform="Win32NT" cwd="C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink" machine-name="WAVE" user="mattg" user-domain="WAVE" culture="en-US" uiculture="en-US" os-architecture="x64" />
+    <settings>
+      <setting name="DisposeRunners" value="True" />
+      <setting name="WorkDirectory" value="C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink" />
+      <setting name="ImageRuntimeVersion" value="4.0.30319" />
+      <setting name="ImageTargetFrameworkName" value=".NETFramework,Version=v4.8" />
+      <setting name="ImageRequiresX86" value="False" />
+      <setting name="ImageRequiresDefaultAppDomainAssemblyResolver" value="False" />
+      <setting name="TargetRuntimeFramework" value="net-4.8" />
+      <setting name="NumberOfTestWorkers" value="8" />
+    </settings>
+    <properties>
+      <property name="_PID" value="3952" />
+      <property name="_APPDOMAIN" value="domain-" />
+    </properties>
+    <test-suite type="TestSuite" id="1-1008" name="SolidLink" fullname="SolidLink" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-01-12T14:17:50.3617051Z" end-time="2026-01-12T14:17:50.7030754Z" duration="0.342059" total="6" passed="6" failed="0" warnings="0" inconclusive="0" skipped="0" asserts="21">
+      <test-suite type="TestSuite" id="1-1009" name="Tests" fullname="SolidLink.Tests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-01-12T14:17:50.3617051Z" end-time="2026-01-12T14:17:50.7030754Z" duration="0.341618" total="6" passed="6" failed="0" warnings="0" inconclusive="0" skipped="0" asserts="21">
+        <test-suite type="TestSuite" id="1-1010" name="Unit" fullname="SolidLink.Tests.Unit" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-01-12T14:17:50.3617051Z" end-time="2026-01-12T14:17:50.7030754Z" duration="0.341601" total="6" passed="6" failed="0" warnings="0" inconclusive="0" skipped="0" asserts="21">
+          <test-suite type="TestFixture" id="1-1000" name="TreeTraverserTests" fullname="SolidLink.Tests.Unit.TreeTraverserTests" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-01-12T14:17:50.3637102Z" end-time="2026-01-12T14:17:50.7030754Z" duration="0.339437" total="6" passed="6" failed="0" warnings="0" inconclusive="0" skipped="0" asserts="21">
+            <properties>
+              <property name="Category" value="Unit" />
+            </properties>
+            <test-case id="1-1006" name="CountTreeNodes_ReturnsCorrectCount" fullname="SolidLink.Tests.Unit.TreeTraverserTests.CountTreeNodes_ReturnsCorrectCount" methodname="CountTreeNodes_ReturnsCorrectCount" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" seed="232580577" result="Passed" start-time="2026-01-12T14:17:50.3658079Z" end-time="2026-01-12T14:17:50.6738320Z" duration="0.307551" asserts="1">
+              <properties />
+            </test-case>
+            <test-case id="1-1005" name="MockComponent_Bodies_ReturnsTessellationData" fullname="SolidLink.Tests.Unit.TreeTraverserTests.MockComponent_Bodies_ReturnsTessellationData" methodname="MockComponent_Bodies_ReturnsTessellationData" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" seed="1728289710" result="Passed" start-time="2026-01-12T14:17:50.6778402Z" end-time="2026-01-12T14:17:50.6873799Z" duration="0.008974" asserts="6">
+              <properties />
+            </test-case>
+            <test-case id="1-1003" name="MockComponent_Children_ReturnsNestedHierarchy" fullname="SolidLink.Tests.Unit.TreeTraverserTests.MockComponent_Children_ReturnsNestedHierarchy" methodname="MockComponent_Children_ReturnsNestedHierarchy" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" seed="532729277" result="Passed" start-time="2026-01-12T14:17:50.6873799Z" end-time="2026-01-12T14:17:50.6883751Z" duration="0.001021" asserts="4">
+              <properties />
+            </test-case>
+            <test-case id="1-1004" name="MockComponent_TransformMatrix_ReturnsValidData" fullname="SolidLink.Tests.Unit.TreeTraverserTests.MockComponent_TransformMatrix_ReturnsValidData" methodname="MockComponent_TransformMatrix_ReturnsValidData" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" seed="1892246350" result="Passed" start-time="2026-01-12T14:17:50.6883751Z" end-time="2026-01-12T14:17:50.6893819Z" duration="0.000802" asserts="2">
+              <properties />
+            </test-case>
+            <test-case id="1-1002" name="MockContext_ActiveConfiguration_HasRootComponent" fullname="SolidLink.Tests.Unit.TreeTraverserTests.MockContext_ActiveConfiguration_HasRootComponent" methodname="MockContext_ActiveConfiguration_HasRootComponent" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" seed="730597027" result="Passed" start-time="2026-01-12T14:17:50.6893819Z" end-time="2026-01-12T14:17:50.6893819Z" duration="0.000713" asserts="4">
+              <properties />
+            </test-case>
+            <test-case id="1-1001" name="MockContext_LoadsFixture_ReturnsValidModel" fullname="SolidLink.Tests.Unit.TreeTraverserTests.MockContext_LoadsFixture_ReturnsValidModel" methodname="MockContext_LoadsFixture_ReturnsValidModel" classname="SolidLink.Tests.Unit.TreeTraverserTests" runstate="Runnable" seed="1437605271" result="Passed" start-time="2026-01-12T14:17:50.6893819Z" end-time="2026-01-12T14:17:50.7010728Z" duration="0.011659" asserts="4">
+              <properties />
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
