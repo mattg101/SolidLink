@@ -7,7 +7,7 @@ The SolidLink Plugin follows a **Hybrid Bridge Architecture** between a C# Solid
 - **Backend (C# .NET 4.8):** Hosts the SolidWorks COM connection, performs geometry extraction (Parasolid tessellation), and manages the lifecycle of the WebView2 windows.
 - **Frontend (React/Three.js):** Provides a high-performance 3D rendering environment and the configuration GUI.
 - **Communication:** Bi-directional JSON bridge via `WebView2.CoreWebView2.PostWebMessageAsJson` and `window.chrome.webview.addEventListener`.
-- **Abstraction Layer:** Interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) are expected in `SolidLink.Addin/Abstractions/`, but those files are not present in this repo snapshot; update the path once restored.
+- **Abstraction Layer:** Interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) live in `SolidLink.Addin/Abstractions/` and are exercised by headless test fixtures.
 
 ## 2. Core Data Models
 

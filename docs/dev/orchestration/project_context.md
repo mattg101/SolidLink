@@ -29,7 +29,7 @@ This file defines the **Technical Context** for the generic SOPs. All agents mus
 -   **Bridge Pattern:** All UI/Backend communication occurs via async JSON messages.
 -   **Threading:** SolidWorks API on Main Thread; UI on WebView2 Process.
 -   **Frontend:** Functional React components + Hooks.
--   **Abstraction Layer:** Interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) are expected in `SolidLink.Addin/Abstractions/`, but those files are not present in this repo snapshot; update the path once restored.
+-   **Abstraction Layer:** Interfaces (`ISolidWorksContext`, `IModelDocument`, `IComponent`, etc.) live in `SolidLink.Addin/Abstractions/` and are used by headless tests via the mock fixtures.
 
 ## Known Pitfalls (Self-Annealed)
 -   **WebView2 Permissions:** Must explicitly set `UserDataFolder` to `%LOCALAPPDATA%` to avoid `AccessDenied`.

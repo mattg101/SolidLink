@@ -40,7 +40,7 @@ SolidLink/                          # Root of SolidLink repo
 Γöé   ΓööΓöÇΓöÇ solidlink-agent-dev-spec.md # This file
 Γö£ΓöÇΓöÇ SolidLink.sln                   # Solution file
 Γö£ΓöÇΓöÇ SolidLink.Addin/                # C# Add-in project
-Γöé   Γö£ΓöÇΓöÇ Abstractions/               # [NEW] Interface definitions (missing in this repo snapshot)
+Γöé   Γö£ΓöÇΓöÇ Abstractions/               # [NEW] Interface definitions (used for headless tests)
 Γöé   Γöé   Γö£ΓöÇΓöÇ ISolidWorksContext.cs
 Γöé   Γöé   Γö£ΓöÇΓöÇ IModelDocument.cs
 Γöé   Γöé   Γö£ΓöÇΓöÇ IComponent.cs
@@ -137,7 +137,7 @@ graph TB
 
 ### 4.1. Interface Abstractions
 
-Create interfaces that abstract SolidWorks COM objects. These are expected in `SolidLink.Addin/Abstractions/`, but the files are missing in this repo snapshot.
+Create interfaces that abstract SolidWorks COM objects. These live in `SolidLink.Addin/Abstractions/` and are used for headless tests via mocks.
 
 #### [NEW] `SolidLink.Addin/Abstractions/ISolidWorksContext.cs`
 

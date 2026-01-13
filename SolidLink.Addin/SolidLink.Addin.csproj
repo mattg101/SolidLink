@@ -99,11 +99,13 @@
     <Compile Include="Adapters\SolidWorksBody.cs" />
     <Compile Include="Tools\FixtureData.cs" />
     <Compile Include="Tools\FixtureExporter.cs" />
+    <Compile Include="Abstractions\DocumentType.cs" />
     <Compile Include="Abstractions\ISolidWorksContext.cs" />
     <Compile Include="Abstractions\IModelDocument.cs" />
     <Compile Include="Abstractions\IComponent.cs" />
     <Compile Include="Abstractions\IConfiguration.cs" />
     <Compile Include="Abstractions\IBody.cs" />
+    <Compile Include="Abstractions\IFace.cs" />
     <Compile Include="Abstractions\IReferenceFrame.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -119,4 +121,6 @@
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.WinFx.targets" Condition="Exists('$(MSBuildToolsPath)\Microsoft.WinFx.targets')" />
+  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk.WindowsDesktop\targets\Microsoft.WinFX.targets" Condition="Exists('$(MSBuildSDKsPath)\Microsoft.NET.Sdk.WindowsDesktop\targets\Microsoft.WinFX.targets')" />
 </Project>

@@ -6,6 +6,10 @@ using Newtonsoft.Json;
 using SolidLink.Addin.Adapters;
 using SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
+using IBody = SolidLink.Addin.Abstractions.IBody;
+using IComponent = SolidLink.Addin.Abstractions.IComponent;
+using IModelDocument = SolidLink.Addin.Abstractions.IModelDocument;
+using IReferenceFrame = SolidLink.Addin.Abstractions.IReferenceFrame;
 
 namespace SolidLink.Addin.Tools
 {

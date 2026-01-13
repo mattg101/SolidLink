@@ -2,6 +2,7 @@ using System;
 using SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
+using IConfiguration = SolidLink.Addin.Abstractions.IConfiguration;
 
 namespace SolidLink.Addin.Adapters
 {
