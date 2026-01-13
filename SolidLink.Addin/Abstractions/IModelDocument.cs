@@ -7,11 +7,4 @@ namespace SolidLink.Addin.Abstractions
         IConfiguration ActiveConfiguration { get; }
         double UnitToMeters { get; }
     }
-
-    public enum DocumentType
-    {
-        Part,
-        Assembly,
-        Drawing
-    }
 }

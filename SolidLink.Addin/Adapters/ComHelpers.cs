@@ -3,20 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace SolidLink.Addin.Adapters
 {
-    public static class ComHelpers
+    internal static class ComHelpers
     {
-        public static T SafeCall<T>(Func<T> func, T fallback = default(T))
-        {
-            try
-            {
-                return func != null ? func() : fallback;
-            }
-            catch
-            {
-                return fallback;
-            }
-        }
-
         public static void SafeCall(Action action)
         {
             try
@@ -28,16 +16,29 @@ namespace SolidLink.Addin.Adapters
             }
         }
 
+        public static T SafeCall<T>(Func<T> action, T fallback = default(T))
+        {
+            try
+            {
+                return action != null ? action() : fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
         public static void ReleaseComObject(object comObject)
         {
-            if (comObject == null)
+            try
             {
-                return;
+                if (comObject != null && Marshal.IsComObject(comObject))
+                {
+                    Marshal.FinalReleaseComObject(comObject);
+                }
             }
-
-            if (Marshal.IsComObject(comObject))
+            catch
             {
-                Marshal.ReleaseComObject(comObject);
             }
         }
     }

@@ -7,9 +7,4 @@ namespace SolidLink.Addin.Abstractions
         string Name { get; }
         IEnumerable<IFace> Faces { get; }
     }
-
-    public interface IFace
-    {
-        float[] GetTessTriangles();
-    }
 }

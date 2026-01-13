@@ -1,0 +1,86 @@
+{
+  "name": "AssemblyWithTransforms",
+  "rootFrame": {
+    "id": "Root-Trans",
+    "name": "Root-Trans",
+    "type": "COMPONENT",
+    "referencePath": "Root-Trans",
+    "localTransform": {
+      "position": [0.1, 0.2, 0.3],
+      "rotation": [0, 0, 0, 1],
+      "matrix": [0, -1, 0, 1, 0, 0, 0, 0, 1, 0.1, 0.2, 0.3, 1]
+    },
+    "joint": null,
+    "links": [
+      {
+        "name": "Root-Trans_link",
+        "inertial": null,
+        "visuals": [
+          {
+            "type": "mesh",
+            "uri": null,
+            "meshData": {
+              "positions": [
+                0,
+                0,
+                0,
+                0.00762,
+                0,
+                0,
+                0,
+                0.00762,
+                0
+              ],
+              "indices": [0, 1, 2]
+            },
+            "color": [0.4, 0.4, 0.8, 1.0]
+          }
+        ],
+        "collisions": []
+      }
+    ],
+    "children": [
+      {
+        "id": "Root-Trans/Child-Trans",
+        "name": "Child-Trans",
+        "type": "COMPONENT",
+        "referencePath": "Child-Trans",
+        "localTransform": {
+          "position": [0, 0.4, 0.1],
+          "rotation": [0, 0, 0, 1],
+          "matrix": [1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.4, 0.1, 1]
+        },
+        "joint": null,
+        "links": [
+          {
+            "name": "Child-Trans_link",
+            "inertial": null,
+            "visuals": [
+              {
+                "type": "mesh",
+                "uri": null,
+                "meshData": {
+                  "positions": [
+                    0,
+                    0,
+                    0,
+                    0.00508,
+                    0,
+                    0,
+                    0,
+                    0.00508,
+                    0
+                  ],
+                  "indices": [0, 1, 2]
+                },
+                "color": [0.9, 0.2, 0.4, 1.0]
+              }
+            ],
+            "collisions": []
+          }
+        ],
+        "children": []
+      }
+    ]
+  }
+}

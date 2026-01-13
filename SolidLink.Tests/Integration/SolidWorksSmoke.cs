@@ -9,7 +9,7 @@ namespace SolidLink.Tests.Integration
         [Test]
         public void RequiresSolidWorks()
         {
-            Assert.Inconclusive("SolidWorks integration test requires a live SolidWorks session.");
+            Assert.Ignore("SolidWorks integration test requires a live SolidWorks session.");
         }
     }
 }

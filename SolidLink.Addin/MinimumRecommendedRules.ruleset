@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Minimum Recommended Rules" Description="Baseline ruleset to satisfy MSBuild configuration." ToolsVersion="15.0">
+</RuleSet>

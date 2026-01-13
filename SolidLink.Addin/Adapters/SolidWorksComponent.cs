@@ -4,6 +4,10 @@ using System.Linq;
 using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
+using IBody = SolidLink.Addin.Abstractions.IBody;
+using IComponent = SolidLink.Addin.Abstractions.IComponent;
+using IModelDocument = SolidLink.Addin.Abstractions.IModelDocument;
+using IReferenceFrame = SolidLink.Addin.Abstractions.IReferenceFrame;
 
 namespace SolidLink.Addin.Adapters
 {

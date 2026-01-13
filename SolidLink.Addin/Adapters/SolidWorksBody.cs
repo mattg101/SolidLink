@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
+using IBody = SolidLink.Addin.Abstractions.IBody;
+using IFace = SolidLink.Addin.Abstractions.IFace;
 
 namespace SolidLink.Addin.Adapters
 {
