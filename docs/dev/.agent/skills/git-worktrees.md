@@ -13,7 +13,7 @@ This skill follows `engineering-doctrine`.
 
 - One branch == one directory == one line of work
 - All worktrees share a single `.git` database
-- Each worktree is permanently bound to its branch
+- Each worktree is bound to its branch while it exists
 
 ## Standard Setup
 
@@ -21,3 +21,25 @@ This skill follows `engineering-doctrine`.
 git checkout main
 git pull --ff-only
 mkdir -p .worktrees
+git worktree add .worktrees/feat-some-branch -b feat-some-branch
+```
+
+## Example Workflow
+```sh
+git worktree add .worktrees/feat-api-tweak -b feat-api-tweak
+git worktree list
+cd .worktrees/feat-api-tweak
+git status
+cd ../..
+git worktree remove .worktrees/feat-api-tweak
+git branch -d feat-api-tweak
+```
+
+## Cleanup
+always check if there are uncommitted changes in a worktree before
+- removing its branch
+- deleting the local worktree folder
+
+Use `git worktree remove <path>` for clean removals.
+If a worktree folder was deleted manually, run `git worktree prune`.
+Ask user what to do with those uncommitted changes.
