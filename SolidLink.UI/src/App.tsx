@@ -5,7 +5,7 @@ import { SelectionProvider, useSelection } from './context/SelectionContext'
 import { Viewport } from './components/Viewport/Viewport'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { DebugLog, useLogger } from './components/DebugLog'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 interface RobotTree {
   name: string;
@@ -17,16 +17,38 @@ interface Frame {
   name: string;
   type: string;
   referencePath: string;
+  localTransform?: {
+    position?: number[];
+    rotation?: number[];
+    matrix?: number[];
+  };
   children: Frame[];
   links: any[];
 }
 
-const TreeItem = ({ frame, level = 0, filter }: { frame: Frame; level?: number; filter?: string }) => {
+const TreeItem = ({
+  frame,
+  level = 0,
+  filter,
+  orderedIds
+}: {
+  frame: Frame;
+  level?: number;
+  filter?: string;
+  orderedIds: string[];
+}) => {
   const [isOpen, setIsOpen] = useState(true);
-  const { selectedId, setSelectedId, hoveredId, setHoveredId } = useSelection();
+  const {
+    selectedIds,
+    hoveredId,
+    setHover,
+    selectSingle,
+    toggleSelection,
+    rangeSelect
+  } = useSelection();
   const hasChildren = frame.children && frame.children.length > 0;
 
-  const isSelected = selectedId === frame.id;
+  const isSelected = selectedIds.includes(frame.id);
   const isHovered = hoveredId === frame.id;
   const isMatch = filter && frame.name.toLowerCase().includes(filter.toLowerCase());
 
@@ -37,24 +59,29 @@ const TreeItem = ({ frame, level = 0, filter }: { frame: Frame; level?: number; 
 
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedId(frame.id);
+    if (e.shiftKey) {
+      rangeSelect(frame.id, orderedIds);
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      toggleSelection(frame.id);
+      return;
+    }
+    selectSingle(frame.id);
   };
 
   return (
     <div style={{ marginLeft: `${level * 12} px` }}>
       <div
+        data-frame-id={frame.id}
+        data-selected={isSelected ? 'true' : 'false'}
+        data-hovered={isHovered ? 'true' : 'false'}
         onClick={(e) => {
           if (hasChildren) setIsOpen(!isOpen);
           handleSelect(e);
         }}
-        onMouseEnter={(e) => {
-          setHoveredId(frame.id);
-          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-        }}
-        onMouseLeave={(e) => {
-          setHoveredId(null);
-          e.currentTarget.style.backgroundColor = isSelected ? 'rgba(74, 158, 255, 0.15)' : 'transparent';
-        }}
+        onMouseEnter={() => setHover(frame.id)}
+        onMouseLeave={() => setHover(null)}
         style={{
           padding: '4px 8px',
           cursor: hasChildren ? 'pointer' : 'default',
@@ -63,7 +90,9 @@ const TreeItem = ({ frame, level = 0, filter }: { frame: Frame; level?: number; 
           gap: '6px',
           fontSize: '0.875rem',
           borderRadius: '4px',
-          backgroundColor: isSelected ? 'rgba(74, 158, 255, 0.15)' : 'transparent',
+          backgroundColor: isSelected
+            ? 'rgba(74, 158, 255, 0.15)'
+            : (isHovered ? 'rgba(255,255,255,0.05)' : 'transparent'),
           borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
           transition: 'all 0.2s',
           opacity: filter && !isMatch ? 0.5 : 1
@@ -83,7 +112,13 @@ const TreeItem = ({ frame, level = 0, filter }: { frame: Frame; level?: number; 
       {isOpen && hasChildren && (
         <div>
           {frame.children.map(child => (
-            <TreeItem key={child.id} frame={child} level={level + 1} filter={filter} />
+            <TreeItem
+              key={child.id}
+              frame={child}
+              level={level + 1}
+              filter={filter}
+              orderedIds={orderedIds}
+            />
           ))}
         </div>
       )}
@@ -97,6 +132,8 @@ function App() {
   const [filter, setFilter] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const { logs, log } = useLogger();
+  const isDev = import.meta.env.DEV;
+  const isWebView = !!(window as any).chrome?.webview;
 
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
@@ -156,6 +193,14 @@ function App() {
     bridgeClient.send('REQUEST_TREE');
   };
 
+  const loadMockTree = async () => {
+    if (!isDev) return;
+    const { mockTree } = await import('./fixtures/mockTree');
+    setTree(mockTree as RobotTree);
+    setConnectionStatus('disconnected');
+    log('Loaded mock tree data for UI testing.', 'info');
+  };
+
   // Send UI_READY and PING on mount to initiate handshake
   useEffect(() => {
     console.log('[App] Component mounted, signaling UI_READY');
@@ -170,6 +215,17 @@ function App() {
     return () => clearTimeout(timer);
   }, [])
 
+
+  const orderedIds = useMemo(() => {
+    if (!tree?.rootFrame) return [];
+    const ids: string[] = [];
+    const walk = (frame: Frame) => {
+      ids.push(frame.id);
+      frame.children?.forEach(walk);
+    };
+    walk(tree.rootFrame);
+    return ids;
+  }, [tree]);
 
   return (
     <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -199,13 +255,23 @@ function App() {
               <h2 style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
                 Robot Hierarchy
               </h2>
-              <button
-                disabled={connectionStatus !== 'connected'}
-                onClick={refreshTree}
-                style={{ padding: '4px 12px', fontSize: '0.75rem' }}
-              >
-                Refresh
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  disabled={connectionStatus !== 'connected'}
+                  onClick={refreshTree}
+                  style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                >
+                  Refresh
+                </button>
+                {isDev && !isWebView && (
+                  <button
+                    onClick={loadMockTree}
+                    style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                  >
+                    Load Mock
+                  </button>
+                )}
+              </div>
             </div>
             <input
               type="text"
@@ -219,7 +285,7 @@ function App() {
 
           <div className="panel" data-testid="tree-root" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
             {tree ? (
-              <TreeItem frame={tree.rootFrame} filter={filter} />
+              <TreeItem frame={tree.rootFrame} filter={filter} orderedIds={orderedIds} />
             ) : (
               <div style={{ textAlign: 'center', marginTop: '4rem' }}>
                 <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No Model</h3>

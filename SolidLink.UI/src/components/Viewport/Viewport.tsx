@@ -2,10 +2,10 @@
  * Viewport component for rendering 3D robot models using React Three Fiber.
  * Transforms are applied using absolute positioning from SolidWorks assembly data.
  */
-import React, { useMemo, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid } from '@react-three/drei';
-import { Matrix4, Vector3, Quaternion, Euler } from 'three';
+import { Box3, Matrix4, Vector3, Quaternion, Euler } from 'three';
 import { useSelection } from '../../context/SelectionContext';
 import { log } from '../../utils/logger';
 
@@ -35,8 +35,78 @@ interface Frame {
   children: Frame[];
 }
 
-const RobotMesh = ({ frame }: { frame: Frame }) => {
-  const { selectedId, setSelectedId, setHoveredId } = useSelection();
+type RegisterMesh = (frameId: string, mesh: THREE.Mesh) => () => void;
+
+const MeshVisual = ({
+  frameId,
+  visual,
+  linkIndex,
+  visualIndex,
+  isSelected,
+  isHovered,
+  registerMesh,
+  onSelect,
+  onHover
+}: {
+  frameId: string;
+  visual: GeometryModel;
+  linkIndex: number;
+  visualIndex: number;
+  isSelected: boolean;
+  isHovered: boolean;
+  registerMesh: RegisterMesh;
+  onSelect: (e: any) => void;
+  onHover: (hovered: boolean, e: any) => void;
+}) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const posArray = useMemo(() => new Float32Array(visual.meshData.positions), [visual.meshData.positions]);
+  const indArray = useMemo(() => new Uint32Array(visual.meshData.indices), [visual.meshData.indices]);
+  const baseColor = `rgb(${visual.color[0] * 255}, ${visual.color[1] * 255}, ${visual.color[2] * 255})`;
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+    return registerMesh(frameId, meshRef.current);
+  }, [frameId, registerMesh]);
+
+  return (
+    <mesh
+      ref={meshRef}
+      key={`${frameId}-link-${linkIndex}-vis-${visualIndex}`}
+      onClick={onSelect}
+      onPointerOver={(e) => onHover(true, e)}
+      onPointerOut={(e) => onHover(false, e)}
+    >
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={posArray.length / 3}
+          array={posArray}
+          itemSize={3}
+          args={[posArray, 3]}
+        />
+        <bufferAttribute
+          attach="index"
+          count={indArray.length}
+          array={indArray}
+          itemSize={1}
+          args={[indArray, 1]}
+        />
+      </bufferGeometry>
+      <meshStandardMaterial
+        color={isSelected ? '#4a9eff' : (isHovered ? '#ffd54a' : baseColor)}
+        metalness={0.5}
+        roughness={0.5}
+        transparent={true}
+        opacity={isSelected ? 0.9 : 1.0}
+        emissive={isSelected ? '#4a9eff' : (isHovered ? '#ffd54a' : '#000000')}
+        emissiveIntensity={isSelected || isHovered ? 0.2 : 0}
+      />
+    </mesh>
+  );
+};
+
+const RobotMesh = ({ frame, registerMesh }: { frame: Frame; registerMesh: RegisterMesh }) => {
+  const { selectedIds, hoveredId, selectSingle, toggleSelection, setSelection, setHover } = useSelection();
 
   useEffect(() => {
     if (frame.links && frame.links.length > 0) {
@@ -44,71 +114,27 @@ const RobotMesh = ({ frame }: { frame: Frame }) => {
     }
   }, [frame.id]);
 
-  const meshes = useMemo(() => {
-    const list: React.ReactNode[] = [];
-    if (!frame.links) return list;
+  const isSelected = selectedIds.includes(frame.id);
+  const isHovered = hoveredId === frame.id;
+  const handleSelect = useCallback((e: any) => {
+    e.stopPropagation();
+    if (e.shiftKey) {
+      if (!isSelected) {
+        setSelection([...selectedIds, frame.id], frame.id);
+      }
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      toggleSelection(frame.id);
+      return;
+    }
+    selectSingle(frame.id);
+  }, [frame.id, isSelected, selectedIds, selectSingle, setSelection, toggleSelection]);
 
-    frame.links.forEach((link, lIdx) => {
-      if (!link.visuals) return;
-      link.visuals.forEach((visual, vIdx) => {
-        if (visual.type === 'mesh' && visual.meshData) {
-          const { positions, indices } = visual.meshData;
-
-          if (lIdx === 0 && vIdx === 0) {
-            log('Viewport', `Mesh: ${positions.length / 3} verts`);
-          }
-
-          const posArray = new Float32Array(positions);
-          const indArray = new Uint32Array(indices);
-
-          const isSelected = selectedId === frame.id;
-
-          list.push(
-            <mesh
-              key={`${frame.id}-link-${lIdx}-vis-${vIdx}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedId(frame.id);
-              }}
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                setHoveredId(frame.id);
-              }}
-              onPointerOut={() => setHoveredId(null)}
-            >
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  count={posArray.length / 3}
-                  array={posArray}
-                  itemSize={3}
-                  args={[posArray, 3]}
-                />
-                <bufferAttribute
-                  attach="index"
-                  count={indArray.length}
-                  array={indArray}
-                  itemSize={1}
-                  args={[indArray, 1]}
-                />
-              </bufferGeometry>
-              <meshStandardMaterial
-                color={isSelected ? '#4a9eff' : `rgb(${visual.color[0] * 255}, ${visual.color[1] * 255}, ${visual.color[2] * 255})`}
-                metalness={0.5}
-                roughness={0.5}
-                transparent={true}
-                opacity={isSelected ? 0.9 : 1.0}
-                emissive={isSelected ? '#4a9eff' : '#000000'}
-                emissiveIntensity={isSelected ? 0.2 : 0}
-              />
-            </mesh>
-          );
-        }
-      });
-    });
-
-    return list;
-  }, [frame, selectedId, setSelectedId, setHoveredId]);
+  const handleHover = useCallback((hovered: boolean, e: any) => {
+    e.stopPropagation();
+    setHover(hovered ? frame.id : null);
+  }, [frame.id, setHover]);
 
   const { position, quaternion } = useMemo(() => {
     if (!frame.localTransform?.matrix) {
@@ -162,56 +188,58 @@ const RobotMesh = ({ frame }: { frame: Frame }) => {
     <>
       {/* Render this frame's meshes with its absolute transform */}
       <group position={position} quaternion={quaternion}>
-        {meshes}
+        {frame.links?.map((link, lIdx) => (
+          link.visuals?.map((visual, vIdx) => (
+            visual.type === 'mesh' && visual.meshData ? (
+              <MeshVisual
+                key={`${frame.id}-link-${lIdx}-vis-${vIdx}`}
+                frameId={frame.id}
+                visual={visual}
+                linkIndex={lIdx}
+                visualIndex={vIdx}
+                isSelected={isSelected}
+                isHovered={isHovered}
+                registerMesh={registerMesh}
+                onSelect={handleSelect}
+                onHover={handleHover}
+              />
+            ) : null
+          ))
+        ))}
       </group>
       {/* Render all descendants at root level (not nested) since transforms are absolute */}
       {allDescendants.map(child => (
-        <RobotMeshFlat key={child.id} frame={child} />
+        <RobotMeshFlat key={child.id} frame={child} registerMesh={registerMesh} />
       ))}
     </>
   );
 };
 
 // Flat version that doesn't recurse - just renders one frame with its meshes
-const RobotMeshFlat = ({ frame }: { frame: Frame }) => {
-  const { selectedId, setSelectedId, setHoveredId } = useSelection();
+const RobotMeshFlat = ({ frame, registerMesh }: { frame: Frame; registerMesh: RegisterMesh }) => {
+  const { selectedIds, hoveredId, selectSingle, toggleSelection, setSelection, setHover } = useSelection();
+  const isSelected = selectedIds.includes(frame.id);
+  const isHovered = hoveredId === frame.id;
 
-  const meshes = useMemo(() => {
-    const list: React.ReactNode[] = [];
-    if (!frame.links) return list;
+  const handleSelect = useCallback((e: any) => {
+    e.stopPropagation();
+    if (e.shiftKey) {
+      if (!isSelected) {
+        setSelection([...selectedIds, frame.id], frame.id);
+      }
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      toggleSelection(frame.id);
+      return;
+    }
+    selectSingle(frame.id);
+  }, [frame.id, isSelected, selectedIds, selectSingle, setSelection, toggleSelection]);
 
-    frame.links.forEach((link, lIdx) => {
-      if (!link.visuals) return;
-      link.visuals.forEach((visual, vIdx) => {
-        if (visual.type === 'mesh' && visual.meshData) {
-          const { positions, indices } = visual.meshData;
-          const posArray = new Float32Array(positions);
-          const indArray = new Uint32Array(indices);
-          const isSelected = selectedId === frame.id;
-
-          list.push(
-            <mesh
-              key={`${frame.id}-link-${lIdx}-vis-${vIdx}`}
-              onClick={(e) => { e.stopPropagation(); setSelectedId(frame.id); }}
-              onPointerOver={(e) => { e.stopPropagation(); setHoveredId(frame.id); }}
-              onPointerOut={() => setHoveredId(null)}
-            >
-              <bufferGeometry>
-                <bufferAttribute attach="attributes-position" count={posArray.length / 3} array={posArray} itemSize={3} args={[posArray, 3]} />
-                <bufferAttribute attach="index" count={indArray.length} array={indArray} itemSize={1} args={[indArray, 1]} />
-              </bufferGeometry>
-              <meshStandardMaterial
-                color={isSelected ? '#4a9eff' : `rgb(${visual.color[0] * 255}, ${visual.color[1] * 255}, ${visual.color[2] * 255})`}
-                metalness={0.5} roughness={0.5} transparent opacity={isSelected ? 0.9 : 1.0}
-                emissive={isSelected ? '#4a9eff' : '#000000'} emissiveIntensity={isSelected ? 0.2 : 0}
-              />
-            </mesh>
-          );
-        }
-      });
-    });
-    return list;
-  }, [frame, selectedId, setSelectedId, setHoveredId]);
+  const handleHover = useCallback((hovered: boolean, e: any) => {
+    e.stopPropagation();
+    setHover(hovered ? frame.id : null);
+  }, [frame.id, setHover]);
 
   const { position, quaternion } = useMemo(() => {
     if (!frame.localTransform?.matrix) {
@@ -229,12 +257,156 @@ const RobotMeshFlat = ({ frame }: { frame: Frame }) => {
 
   return (
     <group position={position} quaternion={quaternion}>
-      {meshes}
+      {frame.links?.map((link, lIdx) => (
+        link.visuals?.map((visual, vIdx) => (
+          visual.type === 'mesh' && visual.meshData ? (
+            <MeshVisual
+              key={`${frame.id}-link-${lIdx}-vis-${vIdx}`}
+              frameId={frame.id}
+              visual={visual}
+              linkIndex={lIdx}
+              visualIndex={vIdx}
+              isSelected={isSelected}
+              isHovered={isHovered}
+              registerMesh={registerMesh}
+              onSelect={handleSelect}
+              onHover={handleHover}
+            />
+          ) : null
+        ))
+      ))}
     </group>
   );
 };
 
+const RenderReadbackBridge = ({ enabled }: { enabled: boolean }) => {
+  const { gl, size, scene, camera } = useThree();
+
+  useEffect(() => {
+    if (!enabled) return;
+    const ctx = gl.getContext();
+    (window as any).__renderReadback__ = (point?: { x: number; y: number }) => {
+      const pixelRatio = gl.getPixelRatio();
+      const width = Math.floor(size.width * pixelRatio);
+      const height = Math.floor(size.height * pixelRatio);
+      const x = point?.x ?? size.width / 2;
+      const y = point?.y ?? size.height / 2;
+      const readX = Math.min(width - 1, Math.max(0, Math.floor(x * pixelRatio)));
+      const readY = Math.min(height - 1, Math.max(0, Math.floor((size.height - y) * pixelRatio)));
+      const buffer = new Uint8Array(4);
+      gl.render(scene, camera);
+      ctx.readPixels(readX, readY, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, buffer);
+      return { r: buffer[0], g: buffer[1], b: buffer[2], a: buffer[3] };
+    };
+    return () => {
+      delete (window as any).__renderReadback__;
+    };
+  }, [camera, enabled, gl, scene, size.height, size.width]);
+
+  return null;
+};
+
 export const Viewport = ({ tree }: { tree: any }) => {
+  const { selectedIds, setSelection, clearSelection } = useSelection();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null);
+  const [isDraggingSelection, setIsDraggingSelection] = useState(false);
+  const [selectionRect, setSelectionRect] = useState<{ start: Vector3; end: Vector3 } | null>(null);
+  const dragStateRef = useRef<{
+    start: { x: number; y: number };
+    mode: 'add' | 'replace';
+    moved: boolean;
+    pointerId: number;
+  } | null>(null);
+  const meshRegistry = useRef<Map<string, Set<THREE.Mesh>>>(new Map());
+
+  const registerMesh = useCallback<RegisterMesh>((frameId, mesh) => {
+    const map = meshRegistry.current;
+    if (!map.has(frameId)) {
+      map.set(frameId, new Set());
+    }
+    map.get(frameId)!.add(mesh);
+    return () => {
+      const set = map.get(frameId);
+      if (!set) return;
+      set.delete(mesh);
+      if (set.size === 0) {
+        map.delete(frameId);
+      }
+    };
+  }, []);
+
+  const getCanvasSize = useCallback(() => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return { width: 1, height: 1 };
+    }
+    return { width: rect.width, height: rect.height };
+  }, []);
+
+  const projectBoxToScreen = useCallback((box: Box3) => {
+    const camera = cameraRef.current;
+    if (!camera) return null;
+    camera.updateMatrixWorld();
+    const size = getCanvasSize();
+    const corners = [
+      new Vector3(box.min.x, box.min.y, box.min.z),
+      new Vector3(box.min.x, box.min.y, box.max.z),
+      new Vector3(box.min.x, box.max.y, box.min.z),
+      new Vector3(box.min.x, box.max.y, box.max.z),
+      new Vector3(box.max.x, box.min.y, box.min.z),
+      new Vector3(box.max.x, box.min.y, box.max.z),
+      new Vector3(box.max.x, box.max.y, box.min.z),
+      new Vector3(box.max.x, box.max.y, box.max.z)
+    ];
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    corners.forEach((corner) => {
+      const projected = corner.project(camera);
+      const x = (projected.x * 0.5 + 0.5) * size.width;
+      const y = (-projected.y * 0.5 + 0.5) * size.height;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    });
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+      return null;
+    }
+    return { minX, minY, maxX, maxY };
+  }, [getCanvasSize]);
+
+  const selectMeshesInRect = useCallback((rect: { minX: number; minY: number; maxX: number; maxY: number }, mode: 'add' | 'replace') => {
+    const hits: string[] = [];
+    meshRegistry.current.forEach((meshes, frameId) => {
+      for (const mesh of meshes) {
+        mesh.updateWorldMatrix(true, true);
+        const box = new Box3().setFromObject(mesh);
+        const bounds = projectBoxToScreen(box);
+        if (!bounds) continue;
+        const intersects = !(bounds.maxX < rect.minX || bounds.minX > rect.maxX || bounds.maxY < rect.minY || bounds.minY > rect.maxY);
+        if (intersects) {
+          hits.push(frameId);
+          break;
+        }
+      }
+    });
+
+    if (hits.length === 0) {
+      if (mode === 'replace') {
+        clearSelection();
+      }
+      return;
+    }
+    if (mode === 'add') {
+      setSelection([...selectedIds, ...hits]);
+      return;
+    }
+    setSelection(hits);
+  }, [clearSelection, projectBoxToScreen, selectedIds, setSelection]);
+
   useEffect(() => {
     log('Viewport', `Mounting with tree: ${tree?.name}`);
   }, [tree?.name]);
@@ -258,19 +430,95 @@ export const Viewport = ({ tree }: { tree: any }) => {
     );
   }
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    if (!(e.shiftKey || e.ctrlKey || e.metaKey)) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const start = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    dragStateRef.current = {
+      start,
+      mode: e.ctrlKey || e.metaKey || e.shiftKey ? 'add' : 'replace',
+      moved: false,
+      pointerId: e.pointerId
+    };
+    setSelectionRect({ start: new Vector3(start.x, start.y, 0), end: new Vector3(start.x, start.y, 0) });
+    setIsDraggingSelection(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const state = dragStateRef.current;
+    if (!state) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const distance = Math.hypot(current.x - state.start.x, current.y - state.start.y);
+    if (distance > 3) {
+      state.moved = true;
+    }
+    if (state.moved) {
+      setSelectionRect({
+        start: new Vector3(state.start.x, state.start.y, 0),
+        end: new Vector3(current.x, current.y, 0)
+      });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const state = dragStateRef.current;
+    if (!state) return;
+    dragStateRef.current = null;
+    setIsDraggingSelection(false);
+    setSelectionRect(null);
+    e.currentTarget.releasePointerCapture(state.pointerId);
+    if (!state.moved) {
+      return;
+    }
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const end = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const minX = Math.min(state.start.x, end.x);
+    const minY = Math.min(state.start.y, end.y);
+    const maxX = Math.max(state.start.x, end.x);
+    const maxY = Math.max(state.start.y, end.y);
+    selectMeshesInRect({ minX, minY, maxX, maxY }, state.mode);
+  };
+
   return (
-    <div style={{ width: '100%', height: '100%', background: '#1a1a1a', position: 'relative' }}>
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: '100%', background: '#1a1a1a', position: 'relative' }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+    >
       <Canvas shadows gl={{ antialias: true }}>
-        <PerspectiveCamera makeDefault position={[1, 1, 1]} />
-        <OrbitControls makeDefault />
+        <PerspectiveCamera ref={cameraRef} makeDefault position={[1, 1, 1]} />
+        <OrbitControls makeDefault enabled={!isDraggingSelection} />
 
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1.0} />
         <axesHelper args={[0.5]} />
         <Grid infiniteGrid sectionSize={0.1} cellSize={0.02} />
 
-        {tree && tree.rootFrame && <RobotMesh frame={tree.rootFrame} />}
+        {tree && tree.rootFrame && <RobotMesh frame={tree.rootFrame} registerMesh={registerMesh} />}
+        <RenderReadbackBridge enabled={import.meta.env.DEV} />
       </Canvas>
+      {selectionRect && (
+        <div
+          style={{
+            position: 'absolute',
+            left: Math.min(selectionRect.start.x, selectionRect.end.x),
+            top: Math.min(selectionRect.start.y, selectionRect.end.y),
+            width: Math.abs(selectionRect.end.x - selectionRect.start.x),
+            height: Math.abs(selectionRect.end.y - selectionRect.start.y),
+            border: '1px dashed rgba(255,255,255,0.6)',
+            background: 'rgba(255,255,255,0.1)',
+            pointerEvents: 'none'
+          }}
+        />
+      )}
     </div>
   );
 };

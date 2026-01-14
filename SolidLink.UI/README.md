@@ -2,6 +2,11 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
+## SolidLink UI Testing Notes
+
+- Playwright GUI tests run with `npm run test:e2e` and save artifacts under `SolidLink.UI/test-results/` (screenshots, videos, traces).
+- A dev-only render readback hook is available as `window.__renderReadback__({ x, y })`, returning `{ r, g, b, a }` for a single pixel.
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
