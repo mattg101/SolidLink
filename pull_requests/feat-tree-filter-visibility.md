@@ -15,6 +15,18 @@ Add tree filtering that hides non-matching nodes and syncs viewport visibility, 
 - [x] **Artifacts Attached**: UI headless artifacts from `SolidLink.UI/test-results/` (`.webm`, screenshots, traces as needed)
 - [x] **Snapshots Updated**: Snapshot images updated
 
+## 3.1 Artifact Links
+- SolidLink.UI/test-results/pr-artifacts/tree-filter-hide.webm
+- SolidLink.UI/test-results/pr-artifacts/tree-filter-send.webm
+- SolidLink.UI/test-results/pr-artifacts/mesh-filter-hide.webm
+- SolidLink.UI/test-results/pr-artifacts/tree-filter-arm.png
+- SolidLink.UI/test-results/pr-artifacts/tree-filter-end.png
+- SolidLink.UI/test-results/pr-artifacts/mesh-before.png
+- SolidLink.UI/test-results/pr-artifacts/mesh-after.png
+- SolidLink.UI/test-results/pr-artifacts/tree-filter-hide-trace.zip
+- SolidLink.UI/test-results/pr-artifacts/tree-filter-send-trace.zip
+- SolidLink.UI/test-results/pr-artifacts/mesh-filter-hide-trace.zip
+
 ## 4. Modified Files
 - SolidLink.UI/src/App.tsx
 - SolidLink.UI/src/components/Viewport/Viewport.tsx
