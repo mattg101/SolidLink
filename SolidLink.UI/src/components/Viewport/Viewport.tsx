@@ -326,12 +326,22 @@ export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<str
   } | null>(null);
   const meshRegistry = useRef<Map<string, Set<THREE.Mesh>>>(new Map());
 
+  const updateMeshRegistryDebug = useCallback(() => {
+    if (!import.meta.env.DEV) return;
+    const snapshot: Record<string, number> = {};
+    meshRegistry.current.forEach((meshes, frameId) => {
+      snapshot[frameId] = meshes.size;
+    });
+    (window as any).__meshRegistry__ = snapshot;
+  }, []);
+
   const registerMesh = useCallback<RegisterMesh>((frameId, mesh) => {
     const map = meshRegistry.current;
     if (!map.has(frameId)) {
       map.set(frameId, new Set());
     }
     map.get(frameId)!.add(mesh);
+    updateMeshRegistryDebug();
     return () => {
       const set = map.get(frameId);
       if (!set) return;
@@ -339,8 +349,9 @@ export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<str
       if (set.size === 0) {
         map.delete(frameId);
       }
+      updateMeshRegistryDebug();
     };
-  }, []);
+  }, [updateMeshRegistryDebug]);
 
   const getCanvasSize = useCallback(() => {
     const rect = containerRef.current?.getBoundingClientRect();

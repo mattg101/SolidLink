@@ -10,6 +10,8 @@
 - [ ] **Build Status**: [PASS/FAIL]
 - [ ] **Unit Tests**: [List of tests run and results]
 - [ ] **Manual Sanity Check**: [Result of the "Happy Path" test]
+- [ ] **Artifacts Attached**: UI headless artifacts from `SolidLink.UI/test-results/` (`.webm`, screenshots, traces as needed)
+- [ ] **Snapshots Updated**: Snapshot images updated or unchanged
 
 ## 4. Modified Files
 [List of key files touched]

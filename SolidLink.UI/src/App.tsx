@@ -390,7 +390,11 @@ function App() {
         </div>
 
         {/* 3D Viewport */}
-        <div className="panel" style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', padding: 0 }}>
+        <div
+          className="panel"
+          data-testid="viewport-panel"
+          style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', padding: 0 }}
+        >
           <ErrorBoundary>
             {tree ? (
               <Viewport tree={tree} visibleIds={geometryVisibleIds} />

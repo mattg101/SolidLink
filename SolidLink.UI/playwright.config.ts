@@ -4,8 +4,10 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 300000,
   retries: process.env.CI ? 1 : 0,
+  outputDir: 'test-results',
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    animations: 'disabled',
     screenshot: 'on',
     trace: 'on',
     video: 'on',
