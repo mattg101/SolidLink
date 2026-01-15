@@ -1,6 +1,6 @@
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { useBridge, bridgeClient, MessageTypes } from './bridge'
-import type { ConnectionStatusPayload, BridgeMessage } from './bridge'
+import type { ConnectionStatusPayload, TreeFilterPayload } from './bridge'
 import { SelectionProvider, useSelection } from './context/SelectionContext'
 import { Viewport } from './components/Viewport/Viewport'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -26,15 +26,68 @@ interface Frame {
   links: any[];
 }
 
+const normalizeQuery = (query: string) => query.trim().toLowerCase();
+
+const matchesFilter = (frame: Frame, query: string) => {
+  if (!query) return false;
+  const name = frame.name?.toLowerCase() ?? '';
+  const path = frame.referencePath?.toLowerCase() ?? '';
+  return name.includes(query) || path.includes(query);
+};
+
+const buildTreeVisibility = (root: Frame | null, query: string) => {
+  const visible = new Set<string>();
+  const matched = new Set<string>();
+
+  if (!root) return { treeVisibleIds: visible, matchedIds: matched };
+  if (!query) {
+    const collect = (frame: Frame) => {
+      visible.add(frame.id);
+      frame.children.forEach(collect);
+    };
+    collect(root);
+    return { treeVisibleIds: visible, matchedIds: matched };
+  }
+
+  const walk = (frame: Frame) => {
+    let descendantMatch = false;
+    frame.children.forEach(child => {
+      if (walk(child)) descendantMatch = true;
+    });
+    const selfMatch = matchesFilter(frame, query);
+    if (selfMatch) matched.add(frame.id);
+    if (selfMatch || descendantMatch) visible.add(frame.id);
+    return selfMatch || descendantMatch;
+  };
+
+  walk(root);
+  return { treeVisibleIds: visible, matchedIds: matched };
+};
+
+const buildGeometryVisibleIds = (root: Frame | null, query: string) => {
+  if (!root || !query) return null;
+  const visible = new Set<string>();
+  const walk = (frame: Frame) => {
+    if (matchesFilter(frame, query)) visible.add(frame.id);
+    frame.children.forEach(walk);
+  };
+  walk(root);
+  return visible;
+};
+
 const TreeItem = ({
   frame,
   level = 0,
-  filter,
+  filterQuery,
+  visibleIds,
+  matchedIds,
   orderedIds
 }: {
   frame: Frame;
   level?: number;
-  filter?: string;
+  filterQuery?: string;
+  visibleIds?: Set<string>;
+  matchedIds?: Set<string>;
   orderedIds: string[];
 }) => {
   const [isOpen, setIsOpen] = useState(true);
@@ -50,12 +103,13 @@ const TreeItem = ({
 
   const isSelected = selectedIds.includes(frame.id);
   const isHovered = hoveredId === frame.id;
-  const isMatch = filter && frame.name.toLowerCase().includes(filter.toLowerCase());
+  const isMatch = !!filterQuery && matchedIds?.has(frame.id);
+  const isVisible = !filterQuery || visibleIds?.has(frame.id);
 
   // Auto-expand if child is a match
   useEffect(() => {
-    if (filter) setIsOpen(true);
-  }, [filter]);
+    if (filterQuery) setIsOpen(true);
+  }, [filterQuery]);
 
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,6 +123,8 @@ const TreeItem = ({
     }
     selectSingle(frame.id);
   };
+
+  if (!isVisible) return null;
 
   return (
     <div style={{ marginLeft: `${level * 12} px` }}>
@@ -94,8 +150,7 @@ const TreeItem = ({
             ? 'rgba(74, 158, 255, 0.15)'
             : (isHovered ? 'rgba(255,255,255,0.05)' : 'transparent'),
           borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
-          transition: 'all 0.2s',
-          opacity: filter && !isMatch ? 0.5 : 1
+          transition: 'all 0.2s'
         }}
       >
         <span style={{ fontSize: '10px', width: '12px' }}>
@@ -116,7 +171,9 @@ const TreeItem = ({
               key={child.id}
               frame={child}
               level={level + 1}
-              filter={filter}
+              filterQuery={filterQuery}
+              visibleIds={visibleIds}
+              matchedIds={matchedIds}
               orderedIds={orderedIds}
             />
           ))}
@@ -130,6 +187,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
   const [tree, setTree] = useState<RobotTree | null>(null)
   const [filter, setFilter] = useState('');
+  const [debouncedFilter, setDebouncedFilter] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const { logs, log } = useLogger();
   const isDev = import.meta.env.DEV;
@@ -215,6 +273,31 @@ function App() {
     return () => clearTimeout(timer);
   }, [])
 
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedFilter(filter), 150);
+    return () => clearTimeout(handle);
+  }, [filter]);
+
+  const { treeVisibleIds, matchedIds } = useMemo(() => {
+    return buildTreeVisibility(tree?.rootFrame ?? null, normalizeQuery(filter));
+  }, [tree, filter]);
+
+  const geometryVisibleIds = useMemo(() => {
+    return buildGeometryVisibleIds(tree?.rootFrame ?? null, normalizeQuery(debouncedFilter));
+  }, [tree, debouncedFilter]);
+
+  const filterActive = filter.trim().length > 0;
+  const hasFilterMatches = !filterActive || matchedIds.size > 0;
+
+  useEffect(() => {
+    if (!tree) return;
+    const query = debouncedFilter.trim();
+    const payload: TreeFilterPayload = {
+      query,
+      visibleIds: geometryVisibleIds ? Array.from(geometryVisibleIds) : []
+    };
+    bridgeClient.send(MessageTypes.TREE_FILTER, payload);
+  }, [tree, debouncedFilter, geometryVisibleIds]);
 
   const orderedIds = useMemo(() => {
     if (!tree?.rootFrame) return [];
@@ -282,10 +365,22 @@ function App() {
             />
           </div>
 
-
           <div className="panel" data-testid="tree-root" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
             {tree ? (
-              <TreeItem frame={tree.rootFrame} filter={filter} orderedIds={orderedIds} />
+              hasFilterMatches ? (
+                <TreeItem
+                  frame={tree.rootFrame}
+                  filterQuery={filter.trim()}
+                  visibleIds={treeVisibleIds}
+                  matchedIds={matchedIds}
+                  orderedIds={orderedIds}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No matches</h3>
+                  <p style={{ color: 'var(--color-text-secondary)' }}>Try a different filter.</p>
+                </div>
+              )
             ) : (
               <div style={{ textAlign: 'center', marginTop: '4rem' }}>
                 <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No Model</h3>
@@ -295,10 +390,14 @@ function App() {
         </div>
 
         {/* 3D Viewport */}
-        <div className="panel" style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', padding: 0 }}>
+        <div
+          className="panel"
+          data-testid="viewport-panel"
+          style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', padding: 0 }}
+        >
           <ErrorBoundary>
             {tree ? (
-              <Viewport tree={tree} />
+              <Viewport tree={tree} visibleIds={geometryVisibleIds} />
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                 <div>

@@ -23,6 +23,11 @@ export interface ErrorPayload {
   message: string;
 }
 
+export interface TreeFilterPayload {
+  query: string;
+  visibleIds: string[];
+}
+
 // --- Message Type Constants ---
 export const MessageTypes = {
   PING: 'PING',
@@ -30,6 +35,7 @@ export const MessageTypes = {
   CONNECTION_STATUS: 'CONNECTION_STATUS',
   REQUEST_TREE: 'REQUEST_TREE',
   TREE_RESPONSE: 'TREE_RESPONSE',
+  TREE_FILTER: 'TREE_FILTER',
   ERROR: 'ERROR',
 } as const;
 

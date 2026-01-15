@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { copyFile } from 'node:fs/promises';
 
 const fixture = JSON.parse(
   readFileSync(new URL('../src/test/fixtures/assembly_simple.json', import.meta.url), 'utf-8')
@@ -11,6 +12,7 @@ const meshFixture = JSON.parse(
 const setupBridge = async (page: any) => {
   await page.addInitScript(() => {
     const listeners = new Set();
+    const sent: any[] = [];
     (window as any).chrome = {
       webview: {
         addEventListener: (_type: string, handler: any) => {
@@ -19,7 +21,8 @@ const setupBridge = async (page: any) => {
         removeEventListener: (_type: string, handler: any) => {
           listeners.delete(handler);
         },
-        postMessage: (_message: any) => {
+        postMessage: (message: any) => {
+          sent.push(message);
         },
       },
     };
@@ -33,6 +36,7 @@ const setupBridge = async (page: any) => {
         listeners.forEach((handler: any) => handler({ data: message }));
       },
     };
+    (window as any).__sentMessages__ = sent;
   });
 };
 
@@ -87,6 +91,29 @@ const readPixelGridMax = async (page: any, x: number, y: number) => {
   return best;
 };
 
+test.afterEach(async ({ page }, testInfo) => {
+  const video = page.video?.();
+  if (!video) return;
+  let sourcePath: string | null = null;
+  try {
+    sourcePath = await video.path();
+  } catch {
+    sourcePath = null;
+  }
+  if (!sourcePath) return;
+  const slug = testInfo.titlePath
+    .join('-')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  await copyFile(sourcePath, testInfo.outputPath(`${slug}.webm`));
+});
+
+const saveScreenshot = async (page: any, testInfo: any, name: string) => {
+  await page.screenshot({ path: testInfo.outputPath(name), fullPage: true });
+};
+
 test('renders assembly tree correctly', async ({ page }) => {
   await loadTree(page, fixture);
 
@@ -121,6 +148,66 @@ test('ctrl-click multi-selects tree items', async ({ page }) => {
 
   await expect(base).toHaveAttribute('data-selected', 'true');
   await expect(arm).toHaveAttribute('data-selected', 'true');
+});
+
+test('tree filter hides non-matching nodes', async ({ page }, testInfo) => {
+  await loadTree(page, fixture);
+
+  const input = page.locator('input[placeholder="Filter names..."]');
+  await input.fill('Arm');
+
+  await saveScreenshot(page, testInfo, 'tree-filter-arm.png');
+  await expect(page.locator('[data-testid="tree-root"]')).toHaveScreenshot('tree-filter-arm.png');
+
+  await expect(page.locator('[data-frame-id="root"]')).toBeVisible();
+  await expect(page.locator('[data-frame-id="arm"]')).toBeVisible();
+  await expect(page.locator('[data-frame-id="end"]')).toHaveCount(0);
+});
+
+test('tree filter sends TREE_FILTER bridge messages', async ({ page }, testInfo) => {
+  await loadTree(page, fixture);
+
+  const input = page.locator('input[placeholder="Filter names..."]');
+  await input.fill('End');
+
+  await saveScreenshot(page, testInfo, 'tree-filter-end.png');
+  await expect(page.locator('[data-testid="tree-root"]')).toHaveScreenshot('tree-filter-end.png');
+
+  await page.waitForFunction(() => {
+    const messages = (window as any).__sentMessages__ || [];
+    return messages.some((message: any) => message?.type === 'TREE_FILTER' && message?.payload?.query === 'End');
+  });
+
+  const payload = await page.evaluate(() => {
+    const messages = (window as any).__sentMessages__ || [];
+    const match = messages.find((message: any) => message?.type === 'TREE_FILTER' && message?.payload?.query === 'End');
+    return match?.payload ?? null;
+  });
+
+  expect(payload).not.toBeNull();
+  expect(payload?.visibleIds ?? []).toContain('end');
+});
+
+test('viewport filter hides mesh geometry', async ({ page }, testInfo) => {
+  test.setTimeout(300000);
+  await loadTree(page, meshFixture);
+  await waitForReadback(page);
+
+  await page.waitForFunction(() => {
+    const registry = (window as any).__meshRegistry__;
+    return registry && Object.keys(registry).length > 0;
+  });
+  await saveScreenshot(page, testInfo, 'mesh-before-filter.png');
+  await expect(page.locator('[data-testid="viewport-panel"]')).toHaveScreenshot('mesh-before-filter.png');
+
+  const input = page.locator('input[placeholder="Filter names..."]');
+  await input.fill('no-match');
+  await page.waitForFunction(() => {
+    const registry = (window as any).__meshRegistry__;
+    return registry && Object.keys(registry).length === 0;
+  });
+  await saveScreenshot(page, testInfo, 'mesh-after-filter.png');
+  await expect(page.locator('[data-testid="viewport-panel"]')).toHaveScreenshot('mesh-after-filter.png');
 });
 
 test('shift-click selects tree range', async ({ page }) => {
