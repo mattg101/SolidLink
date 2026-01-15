@@ -34,3 +34,4 @@ description: Canonical workflow for clarifying requirements, executing work, and
 - Prepare artifacts for downstream consumers (PRs, docs, tests)
 
 This workflow is mandatory unless a skill explicitly overrides it.
+

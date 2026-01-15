@@ -43,3 +43,4 @@ This skill follows `engineering-doctrine` and `structured-workflow`.
 - Do not include unrelated files (e.g., logs, test outputs) in commits.
 - Do not alter existing specs unless explicitly requested.
 - Keep content deterministic and avoid speculative scope beyond the docs.
+

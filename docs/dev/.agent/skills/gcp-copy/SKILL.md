@@ -1,4 +1,8 @@
 ---
+name: gcp-copy
+description: TODO
+---
+---
 description: git commit and push
 ---
 
@@ -19,3 +23,4 @@ git commit -m "commit message"
 ```powershell
 git push
 ```
+

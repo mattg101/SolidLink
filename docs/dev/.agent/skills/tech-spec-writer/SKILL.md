@@ -32,3 +32,4 @@ This skill follows `engineering-doctrine` and `structured-workflow`.
 12. Open Questions
 
 Specifications must be review-proof and suitable for long-term maintenance.
+
