@@ -105,8 +105,9 @@ const MeshVisual = ({
   );
 };
 
-const RobotMesh = ({ frame, registerMesh }: { frame: Frame; registerMesh: RegisterMesh }) => {
+const RobotMesh = ({ frame, registerMesh, visibleIds }: { frame: Frame; registerMesh: RegisterMesh; visibleIds?: Set<string> | null }) => {
   const { selectedIds, hoveredId, selectSingle, toggleSelection, setSelection, setHover } = useSelection();
+  const isVisible = !visibleIds || visibleIds.has(frame.id);
 
   useEffect(() => {
     if (frame.links && frame.links.length > 0) {
@@ -187,37 +188,44 @@ const RobotMesh = ({ frame, registerMesh }: { frame: Frame; registerMesh: Regist
   return (
     <>
       {/* Render this frame's meshes with its absolute transform */}
-      <group position={position} quaternion={quaternion}>
-        {frame.links?.map((link, lIdx) => (
-          link.visuals?.map((visual, vIdx) => (
-            visual.type === 'mesh' && visual.meshData ? (
-              <MeshVisual
-                key={`${frame.id}-link-${lIdx}-vis-${vIdx}`}
-                frameId={frame.id}
-                visual={visual}
-                linkIndex={lIdx}
-                visualIndex={vIdx}
-                isSelected={isSelected}
-                isHovered={isHovered}
-                registerMesh={registerMesh}
-                onSelect={handleSelect}
-                onHover={handleHover}
-              />
-            ) : null
-          ))
-        ))}
-      </group>
+      {isVisible && (
+        <group position={position} quaternion={quaternion}>
+          {frame.links?.map((link, lIdx) => (
+            link.visuals?.map((visual, vIdx) => (
+              visual.type === 'mesh' && visual.meshData ? (
+                <MeshVisual
+                  key={`${frame.id}-link-${lIdx}-vis-${vIdx}`}
+                  frameId={frame.id}
+                  visual={visual}
+                  linkIndex={lIdx}
+                  visualIndex={vIdx}
+                  isSelected={isSelected}
+                  isHovered={isHovered}
+                  registerMesh={registerMesh}
+                  onSelect={handleSelect}
+                  onHover={handleHover}
+                />
+              ) : null
+            ))
+          ))}
+        </group>
+      )}
       {/* Render all descendants at root level (not nested) since transforms are absolute */}
       {allDescendants.map(child => (
-        <RobotMeshFlat key={child.id} frame={child} registerMesh={registerMesh} />
+        <RobotMeshFlat key={child.id} frame={child} registerMesh={registerMesh} visibleIds={visibleIds} />
       ))}
     </>
   );
 };
 
 // Flat version that doesn't recurse - just renders one frame with its meshes
-const RobotMeshFlat = ({ frame, registerMesh }: { frame: Frame; registerMesh: RegisterMesh }) => {
+const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; registerMesh: RegisterMesh; visibleIds?: Set<string> | null }) => {
   const { selectedIds, hoveredId, selectSingle, toggleSelection, setSelection, setHover } = useSelection();
+  const isVisible = !visibleIds || visibleIds.has(frame.id);
+
+  const hasMeshes = !!frame.links?.some(link => link.visuals?.some(visual => visual.type === 'mesh' && visual.meshData));
+  if (!isVisible || !hasMeshes) return null;
+
   const isSelected = selectedIds.includes(frame.id);
   const isHovered = hoveredId === frame.id;
 
@@ -252,8 +260,6 @@ const RobotMeshFlat = ({ frame, registerMesh }: { frame: Frame; registerMesh: Re
     m.decompose(p, q, s);
     return { position: p, quaternion: q };
   }, [frame.localTransform]);
-
-  if (meshes.length === 0) return null;
 
   return (
     <group position={position} quaternion={quaternion}>
@@ -306,7 +312,7 @@ const RenderReadbackBridge = ({ enabled }: { enabled: boolean }) => {
   return null;
 };
 
-export const Viewport = ({ tree }: { tree: any }) => {
+export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<string> | null }) => {
   const { selectedIds, setSelection, clearSelection } = useSelection();
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
@@ -502,7 +508,7 @@ export const Viewport = ({ tree }: { tree: any }) => {
         <axesHelper args={[0.5]} />
         <Grid infiniteGrid sectionSize={0.1} cellSize={0.02} />
 
-        {tree && tree.rootFrame && <RobotMesh frame={tree.rootFrame} registerMesh={registerMesh} />}
+        {tree && tree.rootFrame && <RobotMesh frame={tree.rootFrame} registerMesh={registerMesh} visibleIds={visibleIds} />}
         <RenderReadbackBridge enabled={import.meta.env.DEV} />
       </Canvas>
       {selectionRect && (
