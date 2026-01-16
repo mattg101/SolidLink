@@ -6,6 +6,13 @@ trigger: always_on
 
 This skill follows `engineering-doctrine` and `structured-workflow`.
 
+## Interview (Required)
+
+Before drafting the spec, interview the user to clarify requirements and intent:
+- Ask focused questions about goals, scope, constraints, and success criteria.
+- Confirm the intended users, workflows, and non-goals.
+- Summarize the understanding and get explicit confirmation before writing the spec.
+
 ## Output Requirements
 
 - Markdown
