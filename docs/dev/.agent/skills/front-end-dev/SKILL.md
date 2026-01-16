@@ -1,10 +1,7 @@
 ---
-trigger: always_on
----
-
----
 name: front-end-dev
 description: Build distinctive, production-grade frontend interfaces with a strong aesthetic point of view and real working code.
+trigger: always_on
 ---
 
 This skill follows `engineering-doctrine` and `structured-workflow`.

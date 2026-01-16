@@ -1,9 +1,7 @@
 ---
-trigger: always_on
----
-
 name: git-pr-merge
 description: Conducts an audit of a Pull Request, merges it into main, and synchronizes the local environment. Use this skill when a PR is ready for final review and integration.
+trigger: always_on
 ---
 
 This skill focuses on the "Gatekeeper" role, ensuring that only high-quality, verified code enters the `main` branch.

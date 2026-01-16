@@ -1,9 +1,7 @@
 ---
-trigger: always_on
----
----
 name: git-worktrees
 description: Work on multiple branches in parallel using git worktrees via the git-wt helper to avoid context switching or merge noise.
+trigger: always_on
 ---
 This skill follows `engineering-doctrine`.
 

@@ -1,10 +1,7 @@
 ---
-trigger: always_on
----
-
----
 name: structured-workflow
 description: Canonical workflow for clarifying requirements, executing work, and verifying correctness.
+trigger: always_on
 ---
 
 ## Canonical Workflow

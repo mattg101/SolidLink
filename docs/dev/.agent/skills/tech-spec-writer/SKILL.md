@@ -1,10 +1,7 @@
 ---
-trigger: always_on
----
-
----
 name: tech-spec-writer
 description: Write implementation-ready software technical specifications for senior engineers.
+trigger: always_on
 ---
 
 This skill follows `engineering-doctrine` and `structured-workflow`.

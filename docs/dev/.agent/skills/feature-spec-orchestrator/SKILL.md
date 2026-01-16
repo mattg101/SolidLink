@@ -1,9 +1,7 @@
 ---
-trigger: always_on
----
----
 name: feature-spec-orchestrator
 description: Create feature spec files from project docs, commit and push to main, and create matching feature branches from main.
+trigger: always_on
 ---
 This skill follows `engineering-doctrine` and `structured-workflow`.
 
