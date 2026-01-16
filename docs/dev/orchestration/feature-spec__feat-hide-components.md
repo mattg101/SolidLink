@@ -29,7 +29,7 @@
 | Assumption / Constraint | Impact |
 | --- | --- |
 | Tree nodes have stable IDs | Hidden state maps consistently to geometry and tree nodes. |
-| Hidden state stored in the SolidWorks file | Must serialize alongside URDF metadata; restore on load. |
+| Hidden state stored in its own custom properties | Stored under a dedicated feature tree item; restore on load. |
 | Multi-select + hierarchy | Hide/unhide applies to selected nodes and all descendants. |
 | Hidden items are fully invisible | No ghosting in viewport; hidden items not rendered. |
 | Hidden state is UI-only | Link selection logic ignores visibility state. |
@@ -48,6 +48,7 @@
 | FR-8 | Persist hidden state in file. | P0 | Hidden IDs are saved to the SolidWorks file and restored on reopen. |
 | FR-9 | Visibility does not affect link selection. | P0 | Hidden state does not alter link association logic or data output. |
 | FR-10 | Shortcut help popup. | P1 | A help popup lists `Shift+H`, "Show Hidden", and "Unhide All" actions. |
+| FR-11 | Menu bar Help entry. | P1 | Menu bar includes Help -> "Shortcuts" that opens the shortcut popup. |
 
 ## 6. Non-Functional Requirements
 | Category | Requirement |
@@ -63,12 +64,13 @@
 | Tree UI | Tracks hidden IDs, renders indicators, toggles "Show Hidden". |
 | Viewport | Applies hidden set to mesh visibility and selection masking. |
 | Bridge | Synchronizes hidden state between UI and add-in when needed. |
-| Add-in | Persists hidden IDs to the SolidWorks file and restores on load. |
+| Add-in | Persists hidden IDs to a dedicated feature tree item + custom properties and restores on load. |
+| Menu Bar | Hosts Help -> Shortcuts entry to open the popup. |
 
 ## 8. Data Models
 | Entity | Shape | Notes |
 | --- | --- | --- |
-| HiddenState | `{ hiddenIds: string[] }` | Stored in-memory and persisted in the SolidWorks file. |
+| HiddenState | `{ hiddenIds: string[] }` | Stored in-memory and persisted in custom properties. |
 | HideRequest | `{ ids: string[], includeDescendants: boolean }` | UI to viewport/add-in. |
 | ShowHiddenState | `{ enabled: boolean }` | UI-only toggle. |
 
@@ -98,5 +100,4 @@
 ## 12. Open Questions
 | Question | Owner | Needed By |
 | --- | --- | --- |
-| Where is hidden state persisted (custom props vs existing URDF metadata blob)? | TBD | Before implementation |
-| Best entry point for help popup (toolbar icon vs menu)? | TBD | Before implementation |
+| Confirm data schema for the hidden state custom properties. | TBD | Before implementation |
