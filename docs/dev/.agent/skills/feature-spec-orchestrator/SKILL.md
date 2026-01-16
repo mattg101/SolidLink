@@ -34,8 +34,9 @@ This skill follows `engineering-doctrine` and `structured-workflow`.
    - Confirm filenames include the branch name verbatim.
 5. **Sync (Git)**
    - Commit specs to `main` with a clear message.
-   - Create feature branches from `main` with the same names used in the spec filenames.
-   - Push `main` and all new feature branches to `origin`.
+   - Push `main` to `origin` before creating any feature branches.
+   - Create feature branches from updated `main` with the same names used in the spec filenames.
+   - Push all new feature branches to `origin`.
 
 ## Guardrails
 - Do not include unrelated files (e.g., logs, test outputs) in commits.
