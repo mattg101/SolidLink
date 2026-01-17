@@ -22,8 +22,9 @@
 | --- | --- |
 | UI | Task pane includes "Assembly Component Tree" at top and "Ref Geometry Tree" below. |
 | Data | Reference geometry originates from SolidWorks feature tree. |
-| UX | Tree must remain readable at scale; full path shown on hover. |
+| UX | Tree must remain readable at scale; full path shown on hover; "Hide Origins" has a persistent toggle button. |
 | Intent | Reference geometry helps define base link frames and joint axes. |
+| Related Work | Hidden-state persistence and "Show Hidden" behavior are defined in `feat-hide-components` and should be reused. |
 
 ## 4. Assumptions and Constraints
 | Assumption / Constraint | Impact |
@@ -32,7 +33,7 @@
 | Names are SolidWorks feature names | No normalization; duplicates may exist. |
 | Single root for reference geometry | "Ref Geometry Tree" holds all entries. |
 | Full path displayed in condensed form | Must provide tooltip for full path. |
-| Hidden state applies to reference geometry | Hide/unhide affects tree + viewport and persists across sessions. |
+| Hidden state applies to reference geometry | Hide/unhide affects tree + viewport and persists across sessions via shared hidden-state storage. |
 | "Hide Origins" applies to tree + viewport | Default ON; user can toggle per item. |
 | No inheritance for hide-origins | Parent toggles do not affect children. |
 | Ref geometry list is not persisted | Only hide state persists; ref geometry list reloaded from SolidWorks. |
@@ -49,6 +50,7 @@
 | FR-7 | "Hide Origins" toggle per item. | P0 | Right-click on a ref node toggles origins visibility for that node only. |
 | FR-8 | Default "Hide Origins" ON. | P0 | Newly loaded ref nodes default to hidden origins. |
 | FR-9 | Show frames and axes in 3D. | P1 | Axes/CSYS render in viewport; hide toggles visibility. |
+| FR-10 | Persistent "Hide Origins" toggle button. | P1 | Ref Geometry Tree header includes a toggle that shows/hides origins across ref nodes without opening a menu. |
 
 ## 6. Non-Functional Requirements
 | Category | Requirement |
@@ -71,6 +73,7 @@
 | RefGeometryNode | `{ id: string, type: "axis"|"csys", name: string, path: string, parentPath: string }` | `path` stores full component path. |
 | RefGeometryVisibility | `{ hiddenIds: string[] }` | Shared with global hide state. |
 | RefOriginVisibility | `{ id: string, showOrigin: boolean }` | Per-node toggle; no inheritance. |
+| RefOriginGlobalToggle | `{ enabled: boolean }` | UI-level toggle for showing/hiding origins. |
 
 ## 9. APIs / Interfaces
 | Interface | Usage |
@@ -78,6 +81,7 @@
 | `BridgeMessage{type:"REF_GEOMETRY_LIST"}` | Send axes + CSYS list to UI. |
 | `BridgeMessage{type:"REF_GEOMETRY_HIDE"}` | Hide/unhide ref geometry IDs. |
 | `BridgeMessage{type:"REF_ORIGIN_TOGGLE"}` | Toggle per-node origin visibility. |
+| `BridgeMessage{type:"REF_ORIGIN_GLOBAL_TOGGLE"}` | Toggle origin visibility from the persistent button. |
 
 ## 10. Error Handling
 | Scenario | Handling |
