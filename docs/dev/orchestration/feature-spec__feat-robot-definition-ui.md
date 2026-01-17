@@ -24,6 +24,7 @@
 | Data | Add-in owns robot definition JSON, supports save/undo/redo. |
 | UX | Tree must feel Figma-like: clean, elegant, responsive interactions. |
 | Intent | Build link/joint definitions from geometry, sensors, and reference frames. |
+| Visual System | Stand-in colors/icons define node and joint types until final design. |
 
 ## 4. Assumptions and Constraints
 | Assumption / Constraint | Impact |
@@ -33,6 +34,7 @@
 | Multi-select required | Bulk metadata updates must be supported. |
 | Drag select with Shift | Shift toggles drag-selection between nodes and links. |
 | Ctrl-click multi-select | Standard additive selection across nodes/links. |
+| No overlaps allowed | Nodes and links must be laid out to avoid overlap. |
 | Collapse on double-click | Collapsed nodes show child indicator (faint subtree marker). |
 | Persistence required | Robot definition JSON saved by add-in; undo/redo supported. |
 
@@ -45,12 +47,24 @@
 | FR-4 | Node selection highlights geometry. | P0 | Selecting node highlights associated geometry in viewport/tree. |
 | FR-5 | Multi-select with Ctrl-click. | P0 | Multiple nodes/links selected and shown in selection state. |
 | FR-6 | Drag selection with Shift toggle. | P0 | Shift toggles drag-selection between nodes and links. |
+| FR-6a | Prevent overlapping nodes/links. | P0 | Layout algorithm enforces no overlaps and maintains readable spacing. |
 | FR-7 | Hover add/remove buttons. | P0 | Small buttons appear on node hover to add/remove children. |
 | FR-8 | Collapse/expand nodes. | P0 | Double-click collapses/expands children; collapsed nodes show faint subtree marker. |
 | FR-9 | Metadata panel on click. | P0 | Clicking a node or link opens bottom-right panel with fields. |
 | FR-10 | Metadata editing fields. | P0 | Name, node type or joint type, associated geometry list are editable. |
 | FR-11 | Zoom and pan. | P0 | Mousewheel zooms; drag pans within robot panel. |
 | FR-12 | Save/undo/redo. | P0 | Buttons persist JSON and support undo/redo actions. |
+
+### Stand-in Visuals (Temporary)
+
+| Element | Type | Color | Icon |
+| --- | --- | --- | --- |
+| Node | Body | `#3A86FF` | cube |
+| Node | Sensor | `#FF006E` | radar |
+| Node | Frame | `#00B894` | axis |
+| Joint | Fixed | `#6C757D` | link |
+| Joint | Revolute | `#F59F00` | rotate |
+| Joint | Linear | `#9B5DE5` | slider |
 
 ## 6. Non-Functional Requirements
 | Category | Requirement |
@@ -76,6 +90,8 @@
 | RobotJoint | `{ id, parentId, childId, type }` | type: fixed|revolute|linear |
 | RobotDefinition | `{ nodes: RobotNode[], joints: RobotJoint[] }` | Stored in add-in JSON |
 | SelectionState | `{ nodeIds: string[], jointIds: string[] }` | Supports multi-select |
+| NodeStyle | `{ type: "body"|"sensor"|"frame", color: string, icon: string }` | Stand-in palette + icons. |
+| JointStyle | `{ type: "fixed"|"revolute"|"linear", color: string, icon: string }` | Stand-in palette + icons. |
 
 ## 9. APIs / Interfaces
 | Interface | Usage |
@@ -105,5 +121,4 @@
 ## 12. Open Questions
 | Question | Owner | Needed By |
 | --- | --- | --- |
-| Confirm icon set + color palette for node/joint types. | TBD | Before implementation |
-| Decide drag-select behavior when both nodes and links overlap. | TBD | Before implementation |
+| Finalize icon set + color palette for node/joint types. | TBD | Before implementation |
