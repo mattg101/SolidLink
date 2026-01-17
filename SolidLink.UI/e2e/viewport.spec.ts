@@ -188,6 +188,52 @@ test('tree filter sends TREE_FILTER bridge messages', async ({ page }, testInfo)
   expect(payload?.visibleIds ?? []).toContain('end');
 });
 
+test('shift+H hides selected tree nodes and updates bridge state', async ({ page }) => {
+  await loadTree(page, fixture);
+
+  const arm = page.locator('[data-frame-id="arm"]');
+  const end = page.locator('[data-frame-id="end"]');
+
+  await arm.click();
+  await page.keyboard.press('Shift+H');
+
+  await expect(arm).toHaveCount(0);
+  await expect(end).toHaveCount(0);
+
+  await page.waitForFunction(() => {
+    const messages = (window as any).__sentMessages__ || [];
+    const hide = messages.some((message: any) => message?.type === 'HIDE_REQUEST');
+    const update = messages.some((message: any) => message?.type === 'HIDDEN_STATE_UPDATE');
+    return hide && update;
+  });
+});
+
+test('show hidden reveals nodes and click unhides them', async ({ page }) => {
+  await loadTree(page, fixture);
+
+  const arm = page.locator('[data-frame-id="arm"]');
+  await arm.click();
+  await page.keyboard.press('Shift+H');
+
+  await expect(arm).toHaveCount(0);
+
+  const showHiddenToggle = page.locator('label', { hasText: 'Show Hidden' }).locator('input');
+  await showHiddenToggle.check();
+
+  const hiddenArm = page.locator('[data-frame-id="arm"]');
+  await expect(hiddenArm).toHaveAttribute('data-hidden', 'true');
+
+  await hiddenArm.click();
+  await expect(hiddenArm).toHaveAttribute('data-hidden', 'false');
+
+  await page.waitForFunction(() => {
+    const messages = (window as any).__sentMessages__ || [];
+    const unhide = messages.some((message: any) => message?.type === 'UNHIDE_REQUEST');
+    const update = messages.some((message: any) => message?.type === 'HIDDEN_STATE_UPDATE');
+    return unhide && update;
+  });
+});
+
 test('viewport filter hides mesh geometry', async ({ page }, testInfo) => {
   test.setTimeout(300000);
   await loadTree(page, meshFixture);

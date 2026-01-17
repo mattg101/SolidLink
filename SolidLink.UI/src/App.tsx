@@ -1,11 +1,22 @@
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { useBridge, bridgeClient, MessageTypes } from './bridge'
-import type { ConnectionStatusPayload, TreeFilterPayload } from './bridge'
+import type {
+  ConnectionStatusPayload,
+  TreeFilterPayload,
+  HiddenStatePayload,
+  HideRequestPayload,
+  UnhideRequestPayload,
+  RefGeometryListPayload,
+  RefGeometryNode,
+  RefGeometryHidePayload,
+  RefOriginTogglePayload,
+  RefOriginGlobalTogglePayload
+} from './bridge'
 import { SelectionProvider, useSelection } from './context/SelectionContext'
 import { Viewport } from './components/Viewport/Viewport'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { DebugLog, useLogger } from './components/DebugLog'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 
 interface RobotTree {
   name: string;
@@ -27,6 +38,21 @@ interface Frame {
 }
 
 const normalizeQuery = (query: string) => query.trim().toLowerCase();
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const condensePath = (path: string, maxLength = 42) => {
+  if (!path) return '';
+  if (path.length <= maxLength) return path;
+  const parts = path.split('/');
+  if (parts.length <= 2) {
+    return `${path.slice(0, maxLength - 3)}...`;
+  }
+  const head = parts[0];
+  const tail = parts.slice(-2).join('/');
+  const condensed = `${head}/.../${tail}`;
+  if (condensed.length <= maxLength) return condensed;
+  return `${path.slice(0, maxLength - 3)}...`;
+};
 
 const matchesFilter = (frame: Frame, query: string) => {
   if (!query) return false;
@@ -35,13 +61,18 @@ const matchesFilter = (frame: Frame, query: string) => {
   return name.includes(query) || path.includes(query);
 };
 
-const buildTreeVisibility = (root: Frame | null, query: string) => {
+const buildTreeVisibility = (root: Frame | null, query: string, hiddenIds: Set<string>, showHidden: boolean) => {
   const visible = new Set<string>();
   const matched = new Set<string>();
 
   if (!root) return { treeVisibleIds: visible, matchedIds: matched };
+  const allowHidden = showHidden;
+  const isHidden = (frame: Frame) => hiddenIds.has(frame.id);
   if (!query) {
     const collect = (frame: Frame) => {
+      if (isHidden(frame) && !allowHidden) {
+        return;
+      }
       visible.add(frame.id);
       frame.children.forEach(collect);
     };
@@ -50,6 +81,9 @@ const buildTreeVisibility = (root: Frame | null, query: string) => {
   }
 
   const walk = (frame: Frame) => {
+    if (isHidden(frame) && !allowHidden) {
+      return false;
+    }
     let descendantMatch = false;
     frame.children.forEach(child => {
       if (walk(child)) descendantMatch = true;
@@ -75,13 +109,31 @@ const buildGeometryVisibleIds = (root: Frame | null, query: string) => {
   return visible;
 };
 
+const expandIdsWithDescendants = (frameById: Map<string, Frame>, ids: string[]) => {
+  const expanded = new Set<string>();
+  const stack = [...ids];
+  while (stack.length > 0) {
+    const id = stack.pop();
+    if (!id || expanded.has(id)) continue;
+    expanded.add(id);
+    const frame = frameById.get(id);
+    if (!frame?.children?.length) continue;
+    frame.children.forEach(child => stack.push(child.id));
+  }
+  return expanded;
+};
+
 const TreeItem = ({
   frame,
   level = 0,
   filterQuery,
   visibleIds,
   matchedIds,
-  orderedIds
+  orderedIds,
+  hiddenIds,
+  showHidden,
+  onUnhide,
+  onContextMenu
 }: {
   frame: Frame;
   level?: number;
@@ -89,6 +141,10 @@ const TreeItem = ({
   visibleIds?: Set<string>;
   matchedIds?: Set<string>;
   orderedIds: string[];
+  hiddenIds: Set<string>;
+  showHidden: boolean;
+  onUnhide: (ids: string[]) => void;
+  onContextMenu: (point: { x: number; y: number }, frameId: string) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const {
@@ -104,7 +160,8 @@ const TreeItem = ({
   const isSelected = selectedIds.includes(frame.id);
   const isHovered = hoveredId === frame.id;
   const isMatch = !!filterQuery && matchedIds?.has(frame.id);
-  const isVisible = !filterQuery || visibleIds?.has(frame.id);
+  const isVisible = visibleIds ? visibleIds.has(frame.id) : true;
+  const isHidden = hiddenIds.has(frame.id);
 
   // Auto-expand if child is a match
   useEffect(() => {
@@ -132,12 +189,28 @@ const TreeItem = ({
         data-frame-id={frame.id}
         data-selected={isSelected ? 'true' : 'false'}
         data-hovered={isHovered ? 'true' : 'false'}
+        data-hidden={isHidden ? 'true' : 'false'}
         onClick={(e) => {
           if (hasChildren) setIsOpen(!isOpen);
+          if (isHidden && showHidden) {
+            onUnhide([frame.id]);
+          }
           handleSelect(e);
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onContextMenu({ x: e.clientX, y: e.clientY }, frame.id);
         }}
         onMouseEnter={() => setHover(frame.id)}
         onMouseLeave={() => setHover(null)}
+        onKeyDown={(e) => {
+          if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            onContextMenu({ x: rect.left + rect.width / 2, y: rect.bottom }, frame.id);
+          }
+        }}
+        tabIndex={0}
         style={{
           padding: '4px 8px',
           cursor: hasChildren ? 'pointer' : 'default',
@@ -150,7 +223,8 @@ const TreeItem = ({
             ? 'rgba(74, 158, 255, 0.15)'
             : (isHovered ? 'rgba(255,255,255,0.05)' : 'transparent'),
           borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
-          transition: 'all 0.2s'
+          transition: 'all 0.2s',
+          opacity: isHidden ? 0.55 : 1
         }}
       >
         <span style={{ fontSize: '10px', width: '12px' }}>
@@ -163,6 +237,11 @@ const TreeItem = ({
         }}>
           {frame.name}
         </span>
+        {isHidden && showHidden && (
+          <span style={{ fontSize: '0.65rem', color: '#999', marginLeft: '6px' }}>
+            hidden
+          </span>
+        )}
       </div>
       {isOpen && hasChildren && (
         <div>
@@ -175,6 +254,10 @@ const TreeItem = ({
               visibleIds={visibleIds}
               matchedIds={matchedIds}
               orderedIds={orderedIds}
+              hiddenIds={hiddenIds}
+              showHidden={showHidden}
+              onUnhide={onUnhide}
+              onContextMenu={onContextMenu}
             />
           ))}
         </div>
@@ -183,15 +266,125 @@ const TreeItem = ({
   );
 };
 
+const RefTreeItem = ({
+  node,
+  isSelected,
+  isHidden,
+  showHidden,
+  showOrigin,
+  onSelect,
+  onUnhide,
+  onContextMenu
+}: {
+  node: RefGeometryNode;
+  isSelected: boolean;
+  isHidden: boolean;
+  showHidden: boolean;
+  showOrigin: boolean;
+  onSelect: (id: string) => void;
+  onUnhide: (ids: string[]) => void;
+  onContextMenu: (point: { x: number; y: number }, id: string) => void;
+}) => {
+  if (isHidden && !showHidden) return null;
+
+  const label = condensePath(node.path);
+  const typeLabel = node.type === 'axis' ? 'AX' : 'CS';
+  const handleClick = () => {
+    if (isHidden && showHidden) {
+      onUnhide([node.id]);
+      return;
+    }
+    onSelect(node.id);
+  };
+
+  return (
+    <div>
+      <div
+        data-ref-id={node.id}
+        data-selected={isSelected ? 'true' : 'false'}
+        data-hidden={isHidden ? 'true' : 'false'}
+        onClick={handleClick}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onContextMenu({ x: e.clientX, y: e.clientY }, node.id);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            onContextMenu({ x: rect.left + rect.width / 2, y: rect.bottom }, node.id);
+          }
+        }}
+        tabIndex={0}
+        style={{
+          padding: '4px 8px',
+          cursor: 'default',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.82rem',
+          borderRadius: '4px',
+          backgroundColor: isSelected
+            ? 'rgba(74, 158, 255, 0.15)'
+            : 'transparent',
+          borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
+          transition: 'all 0.2s',
+          opacity: isHidden ? 0.55 : 1
+        }}
+      >
+        <span style={{
+          fontSize: '0.6rem',
+          padding: '2px 4px',
+          borderRadius: '3px',
+          background: 'rgba(255,255,255,0.08)',
+          color: 'var(--color-text-secondary)'
+        }}>
+          {typeLabel}
+        </span>
+        <span title={node.path} style={{ flex: 1 }}>
+          {label}
+        </span>
+        {showOrigin && (
+          <span style={{ fontSize: '0.65rem', color: '#f5c16c' }}>
+            origin
+          </span>
+        )}
+        {isHidden && showHidden && (
+          <span style={{ fontSize: '0.65rem', color: '#999' }}>
+            hidden
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
   const [tree, setTree] = useState<RobotTree | null>(null)
+  const [refGeometry, setRefGeometry] = useState<RefGeometryNode[]>([])
+  const [refSelectedId, setRefSelectedId] = useState<string | null>(null)
   const [filter, setFilter] = useState('');
   const [debouncedFilter, setDebouncedFilter] = useState('');
   const [showLogs, setShowLogs] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [refContextMenu, setRefContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
+  const [refOriginVisibility, setRefOriginVisibility] = useState<Record<string, boolean>>({});
+  const [hideOriginsGlobal, setHideOriginsGlobal] = useState(true);
+  const [mockIndex, setMockIndex] = useState(0);
   const { logs, log } = useLogger();
   const isDev = import.meta.env.DEV;
   const isWebView = !!(window as any).chrome?.webview;
+  const { selectedIds, setSelection, clearSelection } = useSelection();
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [treeSplitRatio, setTreeSplitRatio] = useState(0.6);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const sidebarResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const treeResizeRef = useRef<{ startY: number; startRatio: number } | null>(null);
 
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
@@ -242,9 +435,55 @@ function App() {
     setTree(message.payload);
   })
 
+  useBridge<RefGeometryListPayload>(MessageTypes.REF_GEOMETRY_LIST, (message) => {
+    const nodes = message.payload ?? [];
+    setRefGeometry(nodes);
+    log(`Received REF_GEOMETRY_LIST (${nodes.length})`, 'info');
+  })
+
+  useBridge<HiddenStatePayload>(MessageTypes.HIDDEN_STATE_RESTORE, (message) => {
+    const nextIds = message.payload?.hiddenIds ?? [];
+    setHiddenIds(nextIds);
+    log(`Restored hidden state (${nextIds.length})`, 'info');
+  })
+
   useBridge<string>('ERROR_RESPONSE', (message) => {
     log(`Backend Error: ${message.payload}`, 'error');
   })
+
+  useEffect(() => {
+    if (refGeometry.length === 0) {
+      setRefOriginVisibility({});
+      setRefSelectedId(null);
+      return;
+    }
+
+    const ids = new Set(refGeometry.map(node => node.id));
+    if (refSelectedId && !ids.has(refSelectedId)) {
+      setRefSelectedId(null);
+    }
+
+    setRefOriginVisibility(prev => {
+      const next: Record<string, boolean> = { ...prev };
+      let changed = false;
+
+      ids.forEach(id => {
+        if (!(id in next)) {
+          next[id] = !hideOriginsGlobal;
+          changed = true;
+        }
+      });
+
+      Object.keys(next).forEach(id => {
+        if (!ids.has(id)) {
+          delete next[id];
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [refGeometry, hideOriginsGlobal, refSelectedId]);
 
   const refreshTree = () => {
     log('Sending REQUEST_TREE...', 'info');
@@ -253,11 +492,68 @@ function App() {
 
   const loadMockTree = async () => {
     if (!isDev) return;
-    const { mockTree } = await import('./fixtures/mockTree');
-    setTree(mockTree as RobotTree);
+    const { mockTrees } = await import('./fixtures/mockTrees');
+    const next = mockTrees[mockIndex] ?? mockTrees[0];
+    setTree(next.tree as RobotTree);
     setConnectionStatus('disconnected');
-    log('Loaded mock tree data for UI testing.', 'info');
+    log(`Loaded mock tree: ${next.label}`, 'info');
   };
+
+  const handleSidebarResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    sidebarResizeRef.current = { startX: e.clientX, startWidth: sidebarWidth };
+    const handleMove = (event: PointerEvent) => {
+      if (!sidebarResizeRef.current) return;
+      const delta = event.clientX - sidebarResizeRef.current.startX;
+      const nextWidth = clamp(sidebarResizeRef.current.startWidth + delta, 220, 520);
+      setSidebarWidth(nextWidth);
+    };
+    const handleUp = () => {
+      sidebarResizeRef.current = null;
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+  }, [sidebarWidth]);
+
+  const handleTreeResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!sidebarRef.current) return;
+    treeResizeRef.current = { startY: e.clientY, startRatio: treeSplitRatio };
+    const handleMove = (event: PointerEvent) => {
+      if (!treeResizeRef.current || !sidebarRef.current) return;
+      const rect = sidebarRef.current.getBoundingClientRect();
+      const delta = event.clientY - treeResizeRef.current.startY;
+      const nextRatio = clamp((treeResizeRef.current.startRatio * rect.height + delta) / rect.height, 0.2, 0.8);
+      setTreeSplitRatio(nextRatio);
+    };
+    const handleUp = () => {
+      treeResizeRef.current = null;
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+  }, [treeSplitRatio]);
+
+  const handleSidebarResizeKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setSidebarWidth(prev => clamp(prev - 12, 220, 520));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setSidebarWidth(prev => clamp(prev + 12, 220, 520));
+    }
+  }, []);
+
+  const handleTreeResizeKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setTreeSplitRatio(prev => clamp(prev - 0.03, 0.2, 0.8));
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setTreeSplitRatio(prev => clamp(prev + 0.03, 0.2, 0.8));
+    }
+  }, []);
 
   // Send UI_READY and PING on mount to initiate handshake
   useEffect(() => {
@@ -278,13 +574,73 @@ function App() {
     return () => clearTimeout(handle);
   }, [filter]);
 
+  const frameById = useMemo(() => {
+    const map = new Map<string, Frame>();
+    if (!tree?.rootFrame) return map;
+    const walk = (frame: Frame) => {
+      map.set(frame.id, frame);
+      frame.children?.forEach(walk);
+    };
+    walk(tree.rootFrame);
+    return map;
+  }, [tree]);
+
+  const orderedIds = useMemo(() => {
+    if (!tree?.rootFrame) return [];
+    const ids: string[] = [];
+    const walk = (frame: Frame) => {
+      ids.push(frame.id);
+      frame.children?.forEach(walk);
+    };
+    walk(tree.rootFrame);
+    return ids;
+  }, [tree]);
+
+  const hiddenIdSet = useMemo(() => {
+    return expandIdsWithDescendants(frameById, hiddenIds);
+  }, [frameById, hiddenIds]);
+
+  useEffect(() => {
+    if (selectedIds.length === 0) return;
+    const visibleSelected = selectedIds.filter(id => !hiddenIdSet.has(id));
+    if (visibleSelected.length === selectedIds.length) return;
+    if (visibleSelected.length === 0) {
+      clearSelection();
+      return;
+    }
+    setSelection(visibleSelected, visibleSelected[0]);
+  }, [hiddenIdSet, selectedIds, clearSelection, setSelection]);
+
   const { treeVisibleIds, matchedIds } = useMemo(() => {
-    return buildTreeVisibility(tree?.rootFrame ?? null, normalizeQuery(filter));
-  }, [tree, filter]);
+    return buildTreeVisibility(tree?.rootFrame ?? null, normalizeQuery(filter), hiddenIdSet, showHidden);
+  }, [tree, filter, hiddenIdSet, showHidden]);
 
   const geometryVisibleIds = useMemo(() => {
-    return buildGeometryVisibleIds(tree?.rootFrame ?? null, normalizeQuery(debouncedFilter));
-  }, [tree, debouncedFilter]);
+    if (!tree?.rootFrame) return null;
+    const filterVisible = buildGeometryVisibleIds(tree.rootFrame, normalizeQuery(debouncedFilter));
+    if (hiddenIdSet.size === 0) return filterVisible;
+    if (!filterVisible) {
+      const visible = new Set<string>();
+      orderedIds.forEach(id => {
+        if (!hiddenIdSet.has(id)) visible.add(id);
+      });
+      return visible;
+    }
+    const visible = new Set<string>();
+    filterVisible.forEach(id => {
+      if (!hiddenIdSet.has(id)) visible.add(id);
+    });
+    return visible;
+  }, [tree, debouncedFilter, hiddenIdSet, orderedIds]);
+
+  const visibleRefNodes = useMemo(() => {
+    if (showHidden) return refGeometry;
+    return refGeometry.filter(node => !hiddenIdSet.has(node.id));
+  }, [refGeometry, showHidden, hiddenIdSet]);
+
+  const orderedRefNodes = useMemo(() => {
+    return [...visibleRefNodes].sort((a, b) => a.path.localeCompare(b.path));
+  }, [visibleRefNodes]);
 
   const filterActive = filter.trim().length > 0;
   const hasFilterMatches = !filterActive || matchedIds.size > 0;
@@ -299,16 +655,148 @@ function App() {
     bridgeClient.send(MessageTypes.TREE_FILTER, payload);
   }, [tree, debouncedFilter, geometryVisibleIds]);
 
-  const orderedIds = useMemo(() => {
-    if (!tree?.rootFrame) return [];
-    const ids: string[] = [];
-    const walk = (frame: Frame) => {
-      ids.push(frame.id);
-      frame.children?.forEach(walk);
+  const persistHiddenState = useCallback((nextIds: string[]) => {
+    setHiddenIds(nextIds);
+    const payload: HiddenStatePayload = { hiddenIds: nextIds };
+    bridgeClient.send(MessageTypes.HIDDEN_STATE_UPDATE, payload);
+  }, []);
+
+  const handleHide = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    const expanded = expandIdsWithDescendants(frameById, ids);
+    const nextHiddenSet = new Set(hiddenIdSet);
+    expanded.forEach(id => nextHiddenSet.add(id));
+    const nextHiddenIds = Array.from(nextHiddenSet);
+    const payload: HideRequestPayload = {
+      ids: Array.from(expanded),
+      includeDescendants: true
     };
-    walk(tree.rootFrame);
-    return ids;
-  }, [tree]);
+    bridgeClient.send(MessageTypes.HIDE_REQUEST, payload);
+    persistHiddenState(nextHiddenIds);
+    const remaining = selectedIds.filter(id => !nextHiddenSet.has(id));
+    if (remaining.length === 0) {
+      clearSelection();
+    } else {
+      setSelection(remaining, remaining[0]);
+    }
+  }, [frameById, hiddenIdSet, selectedIds, clearSelection, setSelection, persistHiddenState]);
+
+  const handleUnhide = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    const expanded = expandIdsWithDescendants(frameById, ids);
+    const nextHiddenSet = new Set(hiddenIdSet);
+    expanded.forEach(id => nextHiddenSet.delete(id));
+    const nextHiddenIds = Array.from(nextHiddenSet);
+    const payload: UnhideRequestPayload = {
+      ids: Array.from(expanded),
+      includeDescendants: true
+    };
+    bridgeClient.send(MessageTypes.UNHIDE_REQUEST, payload);
+    persistHiddenState(nextHiddenIds);
+  }, [frameById, hiddenIdSet, persistHiddenState]);
+
+  const handleUnhideAll = useCallback(() => {
+    if (hiddenIdSet.size === 0) return;
+    const payload: UnhideRequestPayload = {
+      ids: Array.from(hiddenIdSet),
+      includeDescendants: true
+    };
+    bridgeClient.send(MessageTypes.UNHIDE_REQUEST, payload);
+    persistHiddenState([]);
+  }, [hiddenIdSet, persistHiddenState]);
+
+  const handleRefHide = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    const nextHiddenSet = new Set(hiddenIdSet);
+    ids.forEach(id => nextHiddenSet.add(id));
+    const payload: RefGeometryHidePayload = { ids, hidden: true };
+    bridgeClient.send(MessageTypes.REF_GEOMETRY_HIDE, payload);
+    persistHiddenState(Array.from(nextHiddenSet));
+  }, [hiddenIdSet, persistHiddenState]);
+
+  const handleRefUnhide = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    const nextHiddenSet = new Set(hiddenIdSet);
+    ids.forEach(id => nextHiddenSet.delete(id));
+    const payload: RefGeometryHidePayload = { ids, hidden: false };
+    bridgeClient.send(MessageTypes.REF_GEOMETRY_HIDE, payload);
+    persistHiddenState(Array.from(nextHiddenSet));
+  }, [hiddenIdSet, persistHiddenState]);
+
+  const handleRefOriginToggle = useCallback((id: string) => {
+    setRefOriginVisibility(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      const payload: RefOriginTogglePayload = { id, showOrigin: next[id] };
+      bridgeClient.send(MessageTypes.REF_ORIGIN_TOGGLE, payload);
+      return next;
+    });
+  }, []);
+
+  const handleGlobalOriginToggle = useCallback(() => {
+    setHideOriginsGlobal(prev => {
+      const next = !prev;
+      setRefOriginVisibility(current => {
+        const updated: Record<string, boolean> = { ...current };
+        refGeometry.forEach(node => {
+          updated[node.id] = !next;
+        });
+        return updated;
+      });
+      const payload: RefOriginGlobalTogglePayload = { enabled: !next };
+      bridgeClient.send(MessageTypes.REF_ORIGIN_GLOBAL_TOGGLE, payload);
+      return next;
+    });
+  }, [refGeometry]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.shiftKey || e.key.toLowerCase() !== 'h') return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
+      e.preventDefault();
+      handleHide(selectedIds);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleHide, selectedIds]);
+
+  useEffect(() => {
+    if (!contextMenu && !refContextMenu && !showHelpMenu) return;
+    const close = () => {
+      setContextMenu(null);
+      setRefContextMenu(null);
+      setShowHelpMenu(false);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('contextmenu', close);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('contextmenu', close);
+    };
+  }, [contextMenu, refContextMenu, showHelpMenu]);
+
+  const openContextMenuAt = useCallback((point: { x: number; y: number }, frameId?: string) => {
+    if (frameId) {
+      if (!selectedIds.includes(frameId)) {
+        setSelection([frameId], frameId);
+      }
+      setContextMenu({ x: point.x, y: point.y });
+      return;
+    }
+    if (selectedIds.length === 0) return;
+    setContextMenu({ x: point.x, y: point.y });
+  }, [selectedIds, setSelection]);
+
+  const openRefContextMenuAt = useCallback((point: { x: number; y: number }, id: string) => {
+    setRefSelectedId(id);
+    setRefContextMenu({ x: point.x, y: point.y, id });
+  }, []);
+
+  const selectionHasHidden = selectedIds.some(id => hiddenIdSet.has(id));
+  const selectionHasVisible = selectedIds.some(id => !hiddenIdSet.has(id));
+  const refMenuOriginVisible = refContextMenu ? !!refOriginVisibility[refContextMenu.id] : false;
+  const refMenuHidden = refContextMenu ? hiddenIdSet.has(refContextMenu.id) : false;
 
   return (
     <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -324,84 +812,243 @@ function App() {
         <h1 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
           SolidLink
         </h1>
-        <button onClick={() => console.log('Settings clicked')}>
-          Settings
-        </button>
-      </header>
-
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '1rem', overflow: 'auto', display: 'flex', gap: '1rem' }}>
-        {/* Sidebar / Tree */}
-        <div style={{ width: '300px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                Robot Hierarchy
-              </h2>
-              <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowHelpMenu(!showHelpMenu)}>
+              Help
+            </button>
+            {showHelpMenu && (
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: '100%',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '6px',
+                padding: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                minWidth: '140px',
+                zIndex: 30
+              }}>
                 <button
-                  disabled={connectionStatus !== 'connected'}
-                  onClick={refreshTree}
-                  style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                  onClick={() => {
+                    setShowShortcuts(true);
+                    setShowHelpMenu(false);
+                  }}
+                  style={{ textAlign: 'left' }}
                 >
-                  Refresh
+                  Shortcuts
                 </button>
-                {isDev && !isWebView && (
-                  <button
-                    onClick={loadMockTree}
-                    style={{ padding: '4px 12px', fontSize: '0.75rem' }}
-                  >
-                    Load Mock
-                  </button>
-                )}
-              </div>
-            </div>
-            <input
-              type="text"
-              placeholder="Filter names..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              style={{ width: '100%', padding: '6px 10px', fontSize: '0.875rem' }}
-            />
-          </div>
-
-          <div className="panel" data-testid="tree-root" style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
-            {tree ? (
-              hasFilterMatches ? (
-                <TreeItem
-                  frame={tree.rootFrame}
-                  filterQuery={filter.trim()}
-                  visibleIds={treeVisibleIds}
-                  matchedIds={matchedIds}
-                  orderedIds={orderedIds}
-                />
-              ) : (
-                <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-                  <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No matches</h3>
-                  <p style={{ color: 'var(--color-text-secondary)' }}>Try a different filter.</p>
-                </div>
-              )
-            ) : (
-              <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-                <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No Model</h3>
               </div>
             )}
           </div>
+          <button onClick={() => console.log('Settings clicked')}>
+            Settings
+          </button>
         </div>
+      </header>
+
+      {/* Main Content */}
+      <main style={{ flex: 1, padding: '1rem', overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
+        {/* Sidebar / Trees */}
+        <div
+          ref={sidebarRef}
+          style={{
+            width: `${sidebarWidth}px`,
+            minWidth: '220px',
+            maxWidth: '520px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <section
+              style={{
+                flexBasis: `${treeSplitRatio * 100}%`,
+                flexGrow: 0,
+                flexShrink: 0,
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h2 style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                    Assembly Component Tree
+                  </h2>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      disabled={connectionStatus !== 'connected'}
+                      onClick={refreshTree}
+                      style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                    >
+                      Refresh
+                    </button>
+                    {isDev && !isWebView && (
+                      <>
+                        <select
+                          value={mockIndex}
+                          onChange={(e) => setMockIndex(Number(e.target.value))}
+                          style={{ padding: '4px 6px', fontSize: '0.75rem' }}
+                        >
+                          <option value={0}>Mock Robot</option>
+                          <option value={1}>Mock Conveyor Line</option>
+                          <option value={2}>Mock Cell Layout</option>
+                        </select>
+                        <button
+                          onClick={loadMockTree}
+                          style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                        >
+                          Load Mock
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Filter names..."
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  style={{ width: '100%', padding: '6px 10px', fontSize: '0.875rem' }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={showHidden}
+                      onChange={(e) => setShowHidden(e.target.checked)}
+                    />
+                    Show Hidden
+                  </label>
+                  <button
+                    onClick={handleUnhideAll}
+                    disabled={hiddenIdSet.size === 0}
+                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                  >
+                    Unhide All
+                  </button>
+                  {hiddenIdSet.size > 0 && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+                      {hiddenIdSet.size} hidden
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="panel" data-testid="tree-root" style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0.5rem' }}>
+                {tree ? (
+                  hasFilterMatches ? (
+                    <TreeItem
+                      frame={tree.rootFrame}
+                      filterQuery={filter.trim()}
+                      visibleIds={treeVisibleIds}
+                      matchedIds={matchedIds}
+                      orderedIds={orderedIds}
+                      hiddenIds={hiddenIdSet}
+                      showHidden={showHidden}
+                      onUnhide={handleUnhide}
+                      onContextMenu={openContextMenuAt}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+                      <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No matches</h3>
+                      <p style={{ color: 'var(--color-text-secondary)' }}>Try a different filter.</p>
+                    </div>
+                  )
+                ) : (
+                  <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+                    <h3 style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>No Model</h3>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <div
+              role="separator"
+              aria-orientation="horizontal"
+              tabIndex={0}
+              onPointerDown={handleTreeResizeStart}
+              onKeyDown={handleTreeResizeKeyDown}
+              style={{ height: '6px', cursor: 'row-resize', background: 'var(--color-border)', margin: '4px 0' }}
+            />
+
+            <section style={{ flex: 1, minHeight: '160px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                  Ref Geometry Tree
+                </h2>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={hideOriginsGlobal}
+                    onChange={handleGlobalOriginToggle}
+                  />
+                  Hide Origins
+                </label>
+              </div>
+              <div className="panel" data-testid="ref-geometry-root" style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0.5rem' }}>
+                {orderedRefNodes.length > 0 ? (
+                  orderedRefNodes.map(node => (
+                    <RefTreeItem
+                      key={node.id}
+                      node={node}
+                      isSelected={refSelectedId === node.id}
+                      isHidden={hiddenIdSet.has(node.id)}
+                      showHidden={showHidden}
+                      showOrigin={!!refOriginVisibility[node.id]}
+                      onSelect={setRefSelectedId}
+                      onUnhide={handleRefUnhide}
+                      onContextMenu={openRefContextMenuAt}
+                    />
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                    <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-text-secondary)' }}>No Ref Geometry</h3>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          tabIndex={0}
+          onPointerDown={handleSidebarResizeStart}
+          onKeyDown={handleSidebarResizeKeyDown}
+          style={{ width: '6px', cursor: 'col-resize', background: 'var(--color-border)', margin: '0 6px' }}
+        />
 
         {/* 3D Viewport */}
         <div
           className="panel"
           data-testid="viewport-panel"
+          onContextMenu={(e) => {
+            e.preventDefault();
+            openContextMenuAt({ x: e.clientX, y: e.clientY });
+          }}
           style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', padding: 0 }}
         >
           <ErrorBoundary>
             {tree ? (
-              <Viewport tree={tree} visibleIds={geometryVisibleIds} />
+              <Viewport
+                tree={tree}
+                visibleIds={geometryVisibleIds}
+                refGeometry={refGeometry}
+                refOriginVisibility={refOriginVisibility}
+                hiddenRefIds={hiddenIdSet}
+              />
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                 <div>
-                  <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🧊</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>??</div>
                   <h3>3D Viewport</h3>
                   <p>Refresh tree to see 3D visualization</p>
                 </div>
@@ -423,6 +1070,136 @@ function App() {
         </div>
         <div>v0.1.0</div>
       </footer>
+
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '6px',
+            padding: '6px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            minWidth: '140px',
+            zIndex: 40
+          }}
+        >
+          {selectionHasVisible && (
+            <button
+              onClick={() => {
+                handleHide(selectedIds);
+                setContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Hide (Shift+H)
+            </button>
+          )}
+          {showHidden && selectionHasHidden && (
+            <button
+              onClick={() => {
+                handleUnhide(selectedIds);
+                setContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Unhide
+            </button>
+          )}
+          {hiddenIdSet.size > 0 && (
+            <button
+              onClick={() => {
+                handleUnhideAll();
+                setContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Unhide All
+            </button>
+          )}
+        </div>
+      )}
+
+      {refContextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: refContextMenu.x,
+            top: refContextMenu.y,
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '6px',
+            padding: '6px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            minWidth: '160px',
+            zIndex: 40
+          }}
+        >
+          {!refMenuHidden && (
+            <button
+              onClick={() => {
+                handleRefHide([refContextMenu.id]);
+                setRefContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Hide
+            </button>
+          )}
+          {showHidden && refMenuHidden && (
+            <button
+              onClick={() => {
+                handleRefUnhide([refContextMenu.id]);
+                setRefContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Unhide
+            </button>
+          )}
+          <button
+            onClick={() => {
+              handleRefOriginToggle(refContextMenu.id);
+              setRefContextMenu(null);
+            }}
+            style={{ textAlign: 'left' }}
+          >
+            {refMenuOriginVisible ? 'Hide Origin' : 'Show Origin'}
+          </button>
+        </div>
+      )}
+
+      {showShortcuts && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50
+          }}
+        >
+          <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '10px', padding: '16px', minWidth: '280px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.95rem' }}>Shortcuts</strong>
+              <button onClick={() => setShowShortcuts(false)}>Close</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
+              <div><strong>Shift+H</strong> Hide selected nodes and descendants</div>
+              <div><strong>Show Hidden</strong> Toggle hidden items in tree</div>
+              <div><strong>Unhide All</strong> Restore all hidden items</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <DebugLog logs={logs} isOpen={showLogs} onClose={() => setShowLogs(false)} />
     </div>
