@@ -1,0 +1,300 @@
+.robot-def-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: radial-gradient(120% 120% at 10% 10%, rgba(61, 139, 101, 0.22), transparent 55%),
+    linear-gradient(180deg, #0e1523 0%, #0b111c 100%);
+  border: 1px solid rgba(73, 99, 132, 0.7);
+  border-radius: 14px;
+  overflow: hidden;
+  animation: robot-panel-in 0.4s ease-out;
+}
+
+.robot-def-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid rgba(73, 99, 132, 0.7);
+  background: linear-gradient(90deg, rgba(20, 31, 48, 0.9), rgba(12, 21, 35, 0.95));
+}
+
+.robot-def-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.robot-def-title {
+  font-family: var(--font-family-display);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e3f2f1;
+}
+
+.robot-def-subtitle {
+  font-size: 0.72rem;
+  color: #9cb5c8;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.robot-def-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.robot-def-button {
+  background: rgba(46, 65, 92, 0.9);
+  color: #e4edf7;
+  border: 1px solid rgba(119, 144, 170, 0.5);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.robot-def-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.robot-def-primary {
+  background: linear-gradient(120deg, #2bc67f, #38bda2);
+  color: #021209;
+  border: none;
+}
+
+.robot-def-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.robot-def-canvas {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.robot-def-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid rgba(73, 99, 132, 0.6);
+  background: rgba(11, 17, 28, 0.7);
+}
+
+.robot-def-pill {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9fb4c6;
+  border: 1px solid rgba(116, 145, 172, 0.4);
+}
+
+.robot-def-ghost {
+  background: rgba(48, 77, 91, 0.8);
+  color: #d8f0e5;
+  border: none;
+  cursor: pointer;
+}
+
+.robot-def-canvas-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: radial-gradient(circle at 20% 20%, rgba(45, 93, 112, 0.22), transparent 45%),
+    radial-gradient(circle at 70% 60%, rgba(18, 41, 66, 0.3), transparent 45%);
+  overflow: hidden;
+}
+
+.robot-def-meta {
+  width: 280px;
+  border-left: 1px solid rgba(73, 99, 132, 0.7);
+  padding: 0.85rem 0.85rem 1rem;
+  background: rgba(10, 16, 26, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.robot-def-meta-title {
+  font-family: var(--font-family-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #d3e6ee;
+}
+
+.robot-def-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #b3c7d7;
+}
+
+.robot-def-field label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+  color: #7e9db4;
+}
+
+.robot-def-field input,
+.robot-def-field select {
+  background: rgba(20, 30, 46, 0.9);
+  border: 1px solid rgba(100, 129, 156, 0.6);
+  color: #e4f0f4;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  font-family: var(--font-family);
+}
+
+.robot-def-readonly {
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(20, 30, 46, 0.6);
+  border: 1px dashed rgba(100, 129, 156, 0.4);
+}
+
+.robot-def-geometry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.robot-def-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(36, 54, 74, 0.8);
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+}
+
+.robot-def-chip button {
+  background: transparent;
+  color: #ffb4a2;
+  border: none;
+  padding: 0;
+}
+
+.robot-def-add-geometry {
+  background: rgba(43, 198, 127, 0.16);
+  color: #b5f3d7;
+  border: 1px dashed rgba(43, 198, 127, 0.4);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.robot-def-empty {
+  font-size: 0.8rem;
+  color: #9ab0c3;
+  line-height: 1.4;
+  padding-top: 0.5rem;
+}
+
+.robot-node {
+  stroke: rgba(9, 14, 24, 0.7);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.35));
+}
+
+.robot-node.selected {
+  stroke: #2bc67f;
+  stroke-width: 2;
+  filter: url(#robot-glow);
+}
+
+.robot-node-icon {
+  fill: rgba(15, 24, 36, 0.8);
+}
+
+.robot-node-icon-text {
+  font-size: 0.65rem;
+  fill: #eaf6f5;
+  font-weight: 700;
+}
+
+.robot-node-title {
+  font-size: 0.82rem;
+  fill: #f4f7fb;
+  font-weight: 600;
+}
+
+.robot-node-subtitle {
+  font-size: 0.68rem;
+  fill: rgba(255, 255, 255, 0.7);
+}
+
+.robot-node-collapse {
+  fill: rgba(255, 255, 255, 0.6);
+}
+
+.robot-node-action {
+  cursor: pointer;
+}
+
+.robot-node-action circle {
+  fill: rgba(11, 17, 28, 0.75);
+  stroke: rgba(204, 233, 222, 0.6);
+  stroke-width: 1;
+}
+
+.robot-node-action line {
+  stroke: rgba(220, 248, 240, 0.9);
+  stroke-width: 1.5;
+}
+
+.robot-joint {
+  fill: none;
+  stroke-width: 2.2;
+  opacity: 0.75;
+  vector-effect: non-scaling-stroke;
+}
+
+.robot-joint.selected {
+  opacity: 1;
+  stroke-width: 3;
+}
+
+.robot-joint-node {
+  opacity: 0.8;
+}
+
+.robot-joint-node.selected {
+  opacity: 1;
+}
+
+.robot-selection-box {
+  fill: rgba(43, 198, 127, 0.12);
+  stroke: rgba(43, 198, 127, 0.7);
+  stroke-dasharray: 4 3;
+  stroke-width: 1.2;
+}
+
+@keyframes robot-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

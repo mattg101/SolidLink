@@ -29,7 +29,7 @@
 ## 4. Assumptions and Constraints
 | Assumption / Constraint | Impact |
 | --- | --- |
-| Entities limited to axes + coordinate systems | Simplifies extraction and display. |
+| Entities limited to axes + coordinate systems | Extract from assemblies and parts; simplifies display. |
 | Names are SolidWorks feature names | No normalization; duplicates may exist. |
 | Single root for reference geometry | "Ref Geometry Tree" holds all entries. |
 | Full path displayed in condensed form | Must provide tooltip for full path. |

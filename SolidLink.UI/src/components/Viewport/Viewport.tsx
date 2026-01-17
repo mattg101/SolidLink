@@ -35,6 +35,19 @@ interface Frame {
   children: Frame[];
 }
 
+interface RefGeometryNode {
+  id: string;
+  type: 'axis' | 'csys';
+  name: string;
+  path: string;
+  parentPath: string;
+  localTransform?: {
+    position?: number[];
+    rotation?: number[];
+    matrix?: number[];
+  };
+}
+
 type RegisterMesh = (frameId: string, mesh: THREE.Mesh) => () => void;
 
 const MeshVisual = ({
@@ -285,6 +298,74 @@ const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; regi
   );
 };
 
+const AxisLine = ({ size = 0.12, color = '#f5c16c' }: { size?: number; color?: string }) => {
+  const positions = useMemo(() => new Float32Array([-size, 0, 0, size, 0, 0]), [size]);
+  return (
+    <line>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial color={color} />
+    </line>
+  );
+};
+
+const RefGeometryGlyph = ({
+  node,
+  showOrigin
+}: {
+  node: RefGeometryNode;
+  showOrigin: boolean;
+}) => {
+  const { position, quaternion } = useMemo(() => {
+    const matrix = node.localTransform?.matrix;
+    if (!matrix || matrix.length < 12) {
+      return {
+        position: new Vector3(
+          node.localTransform?.position?.[0] || 0,
+          node.localTransform?.position?.[1] || 0,
+          node.localTransform?.position?.[2] || 0
+        ),
+        quaternion: new Quaternion(0, 0, 0, 1)
+      };
+    }
+    const m = new Matrix4();
+    m.set(
+      matrix[0], matrix[3], matrix[6], matrix[9],
+      matrix[1], matrix[4], matrix[7], matrix[10],
+      matrix[2], matrix[5], matrix[8], matrix[11],
+      0, 0, 0, 1
+    );
+    const p = new Vector3();
+    const q = new Quaternion();
+    const s = new Vector3();
+    m.decompose(p, q, s);
+    return { position: p, quaternion: q };
+  }, [node.localTransform?.matrix, node.localTransform?.position]);
+
+  return (
+    <group position={position} quaternion={quaternion}>
+      {node.type === 'csys' ? (
+        <axesHelper args={[0.15]} />
+      ) : (
+        <AxisLine />
+      )}
+      {showOrigin && (
+        <mesh>
+          <sphereGeometry args={[0.012, 12, 12]} />
+          <meshStandardMaterial color="#f5c16c" emissive="#f5c16c" emissiveIntensity={0.35} />
+        </mesh>
+      )}
+    </group>
+  );
+};
+
 const RenderReadbackBridge = ({ enabled }: { enabled: boolean }) => {
   const { gl, size, scene, camera } = useThree();
 
@@ -312,7 +393,19 @@ const RenderReadbackBridge = ({ enabled }: { enabled: boolean }) => {
   return null;
 };
 
-export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<string> | null }) => {
+export const Viewport = ({
+  tree,
+  visibleIds,
+  refGeometry,
+  refOriginVisibility,
+  hiddenRefIds
+}: {
+  tree: any;
+  visibleIds?: Set<string> | null;
+  refGeometry?: RefGeometryNode[];
+  refOriginVisibility?: Record<string, boolean>;
+  hiddenRefIds?: Set<string>;
+}) => {
   const { selectedIds, setSelection, clearSelection } = useSelection();
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
@@ -520,6 +613,11 @@ export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<str
         <Grid infiniteGrid sectionSize={0.1} cellSize={0.02} />
 
         {tree && tree.rootFrame && <RobotMesh frame={tree.rootFrame} registerMesh={registerMesh} visibleIds={visibleIds} />}
+        {refGeometry?.map(node => {
+          if (hiddenRefIds?.has(node.id)) return null;
+          const showOrigin = refOriginVisibility?.[node.id] ?? false;
+          return <RefGeometryGlyph key={node.id} node={node} showOrigin={showOrigin} />;
+        })}
         <RenderReadbackBridge enabled={import.meta.env.DEV} />
       </Canvas>
       {selectionRect && (

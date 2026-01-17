@@ -28,6 +28,72 @@ export interface TreeFilterPayload {
   visibleIds: string[];
 }
 
+export interface HiddenStatePayload {
+  hiddenIds: string[];
+}
+
+export interface HideRequestPayload {
+  ids: string[];
+  includeDescendants: boolean;
+}
+
+export interface UnhideRequestPayload {
+  ids: string[];
+  includeDescendants: boolean;
+}
+
+export interface RefGeometryNode {
+  id: string;
+  type: 'axis' | 'csys';
+  name: string;
+  path: string;
+  parentPath: string;
+  localTransform?: {
+    position?: number[];
+    rotation?: number[];
+    matrix?: number[];
+  };
+}
+
+export type RefGeometryListPayload = RefGeometryNode[];
+
+export interface RefGeometryHidePayload {
+  ids: string[];
+  hidden: boolean;
+}
+
+export interface RefOriginTogglePayload {
+  id: string;
+  showOrigin: boolean;
+}
+
+export interface RefOriginGlobalTogglePayload {
+  enabled: boolean;
+}
+
+export type RobotNodeType = 'body' | 'sensor' | 'frame';
+export type RobotJointType = 'fixed' | 'revolute' | 'linear';
+
+export interface RobotNode {
+  id: string;
+  name: string;
+  type: RobotNodeType;
+  children: string[];
+  geometryIds: string[];
+}
+
+export interface RobotJoint {
+  id: string;
+  parentId: string;
+  childId: string;
+  type: RobotJointType;
+}
+
+export interface RobotDefinition {
+  nodes: RobotNode[];
+  joints: RobotJoint[];
+}
+
 // --- Message Type Constants ---
 export const MessageTypes = {
   PING: 'PING',
@@ -36,6 +102,19 @@ export const MessageTypes = {
   REQUEST_TREE: 'REQUEST_TREE',
   TREE_RESPONSE: 'TREE_RESPONSE',
   TREE_FILTER: 'TREE_FILTER',
+  HIDE_REQUEST: 'HIDE_REQUEST',
+  UNHIDE_REQUEST: 'UNHIDE_REQUEST',
+  HIDDEN_STATE_UPDATE: 'HIDDEN_STATE_UPDATE',
+  HIDDEN_STATE_RESTORE: 'HIDDEN_STATE_RESTORE',
+  REF_GEOMETRY_LIST: 'REF_GEOMETRY_LIST',
+  REF_GEOMETRY_HIDE: 'REF_GEOMETRY_HIDE',
+  REF_ORIGIN_TOGGLE: 'REF_ORIGIN_TOGGLE',
+  REF_ORIGIN_GLOBAL_TOGGLE: 'REF_ORIGIN_GLOBAL_TOGGLE',
+  ROBOT_DEF_SAVE: 'ROBOT_DEF_SAVE',
+  ROBOT_DEF_LOAD: 'ROBOT_DEF_LOAD',
+  ROBOT_DEF_UNDO: 'ROBOT_DEF_UNDO',
+  ROBOT_DEF_REDO: 'ROBOT_DEF_REDO',
+  ROBOT_DEF_UPDATE: 'ROBOT_DEF_UPDATE',
   ERROR: 'ERROR',
 } as const;
 

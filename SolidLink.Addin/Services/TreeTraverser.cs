@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using SolidLink.Addin.Abstractions;
 using GRM = SolidLink.Addin.Model;
@@ -42,6 +43,32 @@ namespace SolidLink.Addin.Services
             }
 
             return robot;
+        }
+
+        public List<GRM.RefGeometryNode> ExtractReferenceGeometry(IModelDocument model = null)
+        {
+            var activeModel = model ?? _context.ActiveModel;
+            if (activeModel == null)
+            {
+                return new List<GRM.RefGeometryNode>();
+            }
+
+            var nodes = new List<GRM.RefGeometryNode>();
+            if (activeModel.Type == DocumentType.Assembly)
+            {
+                var rootComp = activeModel.ActiveConfiguration?.RootComponent;
+                if (rootComp == null)
+                {
+                    return nodes;
+                }
+                TraverseReferenceGeometry(rootComp, nodes, null);
+            }
+            else if (activeModel.Type == DocumentType.Part)
+            {
+                var componentPath = activeModel.Title;
+                AddReferenceNodes(componentPath, activeModel.ReferenceFrames, nodes);
+            }
+            return nodes;
         }
 
         private GRM.Frame TraverseComponent(IComponent comp)
@@ -89,8 +116,6 @@ namespace SolidLink.Addin.Services
                 }
             }
 
-            ExtractReferenceFrames(comp, frame);
-
             return frame;
         }
 
@@ -116,44 +141,66 @@ namespace SolidLink.Addin.Services
             };
         }
 
-        private void ExtractReferenceFrames(IComponent comp, GRM.Frame parentFrame)
+        private void TraverseReferenceGeometry(IComponent comp, List<GRM.RefGeometryNode> nodes, string parentPath)
         {
-            var references = comp.ReferenceFrames;
+            if (comp == null)
+            {
+                return;
+            }
+
+            var componentPath = string.IsNullOrWhiteSpace(parentPath)
+                ? comp.Name
+                : $"{parentPath}/{comp.Name}";
+
+            AddReferenceNodes(componentPath, comp.ReferenceFrames, nodes);
+
+            foreach (var child in comp.Children ?? Enumerable.Empty<IComponent>())
+            {
+                TraverseReferenceGeometry(child, nodes, componentPath);
+            }
+        }
+
+        private void AddReferenceNodes(string componentPath, IEnumerable<IReferenceFrame> references, List<GRM.RefGeometryNode> nodes)
+        {
             if (references == null) return;
 
             foreach (var reference in references)
             {
                 if (reference == null) continue;
+                var normalizedType = NormalizeRefGeometryType(reference.Type);
+                if (normalizedType == null) continue;
 
-                var childFrame = new GRM.Frame
+                var name = string.IsNullOrWhiteSpace(reference.Name) ? "(Unnamed)" : reference.Name;
+                var fullPath = string.IsNullOrWhiteSpace(componentPath) ? name : $"{componentPath}/{name}";
+                var id = $"{componentPath}|{normalizedType}|{name}";
+
+                nodes.Add(new GRM.RefGeometryNode
                 {
-                    Name = reference.Name,
-                    Type = NormalizeReferenceType(reference.Type),
-                    ReferencePath = reference.Name,
+                    Id = id,
+                    Type = normalizedType,
+                    Name = name,
+                    Path = fullPath,
+                    ParentPath = componentPath,
                     LocalTransform = ExtractTransform(reference.TransformMatrix)
-                };
-
-                parentFrame.Children.Add(childFrame);
+                });
             }
         }
 
-        private string NormalizeReferenceType(string type)
+        private string NormalizeRefGeometryType(string type)
         {
             if (string.IsNullOrWhiteSpace(type))
             {
-                return "REFERENCE";
+                return null;
             }
 
             switch (type.Trim().ToLower())
             {
                 case "coordsys":
-                    return "COORDSYS";
+                    return "csys";
                 case "refaxis":
-                    return "REFAXIS";
-                case "refplane":
-                    return "REFPLANE";
+                    return "axis";
                 default:
-                    return type.ToUpper();
+                    return null;
             }
         }
 
