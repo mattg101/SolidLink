@@ -1,97 +1,105 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using Newtonsoft.Json;
+using SolidLink.Addin.Adapters;
 using SolidWorks.Interop.sldworks;
+using SolidWorks.Interop.swconst;
 
 namespace SolidLink.Addin.Services
 {
-    public class HiddenStateService
+    public sealed class HiddenStateService
     {
-        private readonly string _storagePath;
+        private const string PropertyName = "SolidLink.HiddenState";
 
-        public HiddenStateService()
+        public List<string> LoadHiddenIds(ModelDoc2 model)
         {
-            var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-            _storagePath = Path.Combine(appData, "SolidLink", "hidden_states.json");
-        }
-
-        public IEnumerable<string> LoadHiddenIds(ModelDoc2 model)
-        {
-            if (model == null) return Enumerable.Empty<string>();
-
-            var store = LoadStore();
-            var key = GetModelKey(model);
-
-            return store.TryGetValue(key, out var ids) ? ids : Enumerable.Empty<string>();
-        }
-
-        public void SaveHiddenIds(ModelDoc2 model, IEnumerable<string> ids)
-        {
-            if (model == null) return;
-
-            var store = LoadStore();
-            var key = GetModelKey(model);
-
-            if (ids == null || !ids.Any())
+            if (model == null)
             {
-                if (store.ContainsKey(key))
-                {
-                    store.Remove(key);
-                    SaveStore(store);
-                }
-                return;
+                return new List<string>();
             }
 
-            store[key] = ids.ToList();
-            SaveStore(store);
-        }
-
-        private string GetModelKey(ModelDoc2 model)
-        {
-            // Use file path if saved, otherwise title
-            var path = model.GetPathName();
-            return string.IsNullOrEmpty(path) ? model.GetTitle() : path;
-        }
-
-        private Dictionary<string, List<string>> LoadStore()
-        {
+            ModelDocExtension extension = null;
+            CustomPropertyManager manager = null;
             try
             {
-                if (!File.Exists(_storagePath))
+                extension = model.Extension;
+                manager = extension.CustomPropertyManager[string.Empty];
+                string rawValue;
+                string resolvedValue;
+                int result = manager.Get4(PropertyName, false, out rawValue, out resolvedValue);
+                if (result == (int)swCustomInfoGetResult_e.swCustomInfoGetResult_NotPresent)
                 {
-                    return new Dictionary<string, List<string>>();
+                    return new List<string>();
                 }
 
-                var json = File.ReadAllText(_storagePath);
-                return JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json) 
-                       ?? new Dictionary<string, List<string>>();
-            }
-            catch
-            {
-                return new Dictionary<string, List<string>>();
-            }
-        }
-
-        private void SaveStore(Dictionary<string, List<string>> store)
-        {
-            try
-            {
-                var dir = Path.GetDirectoryName(_storagePath);
-                if (!Directory.Exists(dir))
+                var json = string.IsNullOrWhiteSpace(resolvedValue) ? rawValue : resolvedValue;
+                if (string.IsNullOrWhiteSpace(json))
                 {
-                    Directory.CreateDirectory(dir);
+                    return new List<string>();
                 }
 
-                var json = JsonConvert.SerializeObject(store, Formatting.Indented);
-                File.WriteAllText(_storagePath, json);
+                var state = JsonConvert.DeserializeObject<HiddenStatePayload>(json);
+                return state?.HiddenIds?
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct()
+                    .ToList() ?? new List<string>();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[SolidLink] Failed to save hidden states: {ex.Message}");
+                Debug.WriteLine($"[SolidLink] Hidden state load failed: {ex.Message}");
+                return new List<string>();
             }
+            finally
+            {
+                ComHelpers.ReleaseComObject(manager);
+                ComHelpers.ReleaseComObject(extension);
+            }
+        }
+
+        public void SaveHiddenIds(ModelDoc2 model, IEnumerable<string> hiddenIds)
+        {
+            if (model == null)
+            {
+                return;
+            }
+
+            var ids = hiddenIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
+                .ToList() ?? new List<string>();
+
+            var payload = JsonConvert.SerializeObject(new HiddenStatePayload { HiddenIds = ids });
+
+            ModelDocExtension extension = null;
+            CustomPropertyManager manager = null;
+            try
+            {
+                extension = model.Extension;
+                manager = extension.CustomPropertyManager[string.Empty];
+                manager.Add3(
+                    PropertyName,
+                    (int)swCustomInfoType_e.swCustomInfoText,
+                    payload,
+                    (int)swCustomPropertyAddOption_e.swCustomPropertyDeleteAndAdd
+                );
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SolidLink] Hidden state save failed: {ex.Message}");
+            }
+            finally
+            {
+                ComHelpers.ReleaseComObject(manager);
+                ComHelpers.ReleaseComObject(extension);
+            }
+        }
+
+        private sealed class HiddenStatePayload
+        {
+            [JsonProperty("hiddenIds")]
+            public List<string> HiddenIds { get; set; } = new List<string>();
         }
     }
 }
-
