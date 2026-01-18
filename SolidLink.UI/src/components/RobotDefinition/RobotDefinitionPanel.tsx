@@ -370,16 +370,18 @@ export const RobotDefinitionPanel = ({
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
     const delta = -event.deltaY * 0.0015;
-    const nextZoom = clamp(zoom + delta, 0.1, 2.4);
+    const nextZoom = clamp(zoom + delta, 0.05, 2.4);
     setZoom(nextZoom);
   };
 
   const handleFit = useCallback(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    
     const scaleX = rect.width / layout.width;
     const scaleY = rect.height / layout.height;
-    const nextZoom = clamp(Math.min(scaleX, scaleY) * 0.9, 0.1, 2.1);
+    const nextZoom = clamp(Math.min(scaleX, scaleY) * 0.9, 0.05, 2.1);
     setZoom(nextZoom);
     setPan({
       x: (rect.width - layout.width * nextZoom) / 2,
