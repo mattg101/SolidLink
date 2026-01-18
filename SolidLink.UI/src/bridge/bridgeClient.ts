@@ -36,7 +36,6 @@ class BridgeClient {
         // Check if running in WebView2 context
         if (typeof window !== 'undefined' && window.chrome?.webview) {
             window.chrome.webview.addEventListener('message', this.onMessage.bind(this));
-            console.log('[BridgeClient] Initialized in WebView2 context');
         } else {
             console.warn('[BridgeClient] Not running in WebView2 context. Bridge will be mocked.');
         }
@@ -56,9 +55,6 @@ class BridgeClient {
 
         if (window.chrome?.webview) {
             window.chrome.webview.postMessage(message);
-            console.log('[BridgeClient] Sent:', type, payload);
-        } else {
-            console.log('[BridgeClient] Mock send:', type, payload);
         }
     }
 
@@ -123,7 +119,6 @@ class BridgeClient {
     private onMessage(event: MessageEvent): void {
         try {
             const message = event.data as BridgeMessage;
-            console.log('[BridgeClient] Received:', message.type, message.payload);
 
             // Check if this is a response to a pending request
             if (message.correlationId && this.pendingRequests.has(message.correlationId)) {

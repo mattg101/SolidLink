@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SolidLink.Addin.Abstractions
 {
     public interface IModelDocument
@@ -6,5 +8,6 @@ namespace SolidLink.Addin.Abstractions
         DocumentType Type { get; }
         IConfiguration ActiveConfiguration { get; }
         double UnitToMeters { get; }
+        IEnumerable<IReferenceFrame> ReferenceFrames { get; }
     }
 }
