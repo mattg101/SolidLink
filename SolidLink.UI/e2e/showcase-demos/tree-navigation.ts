@@ -65,14 +65,8 @@ export const demoTreeNavigation = async (page: Page) => {
   await base.click(); // Expands back.
   
   await page.keyboard.down('Shift');
-  // arm is collapsed from previous step. Need to expand it?
-  // If arm is collapsed, end is hidden.
-  // Shift+Click range needs visible target.
-  // We need to expand arm.
-  await arm.click(); // Expands arm. (Shift+Click -> Range Select?)
-  // Shift+Click on arm will Range Select Base..Arm.
-  // And expand it.
-  await end.click(); // Range select Base..End
+  // Range select Base..Arm
+  await arm.click();
   await page.keyboard.up('Shift');
   await pause(page);
   
