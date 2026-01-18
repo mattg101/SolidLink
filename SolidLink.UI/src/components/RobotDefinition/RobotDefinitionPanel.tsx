@@ -398,8 +398,12 @@ export const RobotDefinitionPanel = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
-    handleFit();
-  }, [handleFit]); // Re-fit whenever layout changes (node add/remove)
+    const observer = new ResizeObserver(() => {
+      handleFit();
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [handleFit]);
 
   const activeNode = selection.nodeIds.length === 1 ? nodeMap.get(selection.nodeIds[0]) ?? null : null;
   const activeJoint = selection.jointIds.length === 1 ? jointMap.get(selection.jointIds[0]) ?? null : null;
@@ -463,7 +467,7 @@ export const RobotDefinitionPanel = ({
                   <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="rgba(43, 198, 127, 0.35)" />
                 </filter>
               </defs>
-              <g transform={`translate(${pan.x + CANVAS_PADDING} ${pan.y + CANVAS_PADDING}) scale(${zoom})`}>
+              <g transform={`translate(${pan.x + CANVAS_PADDING * zoom} ${pan.y + CANVAS_PADDING * zoom}) scale(${zoom})`}>
                 {definition.joints.map(joint => {
                   const parentPos = layout.positions.get(joint.parentId);
                   const childPos = layout.positions.get(joint.childId);
