@@ -18,6 +18,7 @@ import { Viewport } from './components/Viewport/Viewport'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { DebugLog, useLogger } from './components/DebugLog'
 import { RobotDefinitionPanel } from './components/RobotDefinition/RobotDefinitionPanel'
+import { TestLabel } from './components/TestLabel'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 
 interface RobotTree {
@@ -999,6 +1000,7 @@ function App() {
 
   return (
     <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <TestLabel />
       {/* Header */}
       <header style={{
         padding: '1rem',

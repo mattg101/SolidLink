@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --project=default",
+    "test:showcase": "playwright test --project=showcase"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
