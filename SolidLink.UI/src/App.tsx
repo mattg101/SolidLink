@@ -557,7 +557,7 @@ function App() {
 
   // Send UI_READY and PING on mount to initiate handshake
   useEffect(() => {
-    console.log('[App] Component mounted, signaling UI_READY');
+    // console.log('[App] Component mounted, signaling UI_READY');
     bridgeClient.send('UI_READY');
     bridgeClient.send(MessageTypes.PING);
 
@@ -844,7 +844,7 @@ function App() {
               </div>
             )}
           </div>
-          <button onClick={() => console.log('Settings clicked')}>
+          <button onClick={() => { /* Settings clicked */ }}>
             Settings
           </button>
         </div>
