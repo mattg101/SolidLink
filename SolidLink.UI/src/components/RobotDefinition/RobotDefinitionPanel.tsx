@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { RobotDefinition, RobotJoint, RobotNode, RobotNodeType, RobotJointType } from '../../bridge';
+import type { RobotDefinition, RobotJoint, RobotNode, RobotNodeType, RobotJointType, RefGeometryNode } from '../../bridge';
 import './RobotDefinitionPanel.css';
 
 type SelectionState = {
@@ -121,6 +121,8 @@ type RobotDefinitionPanelProps = {
   canRedo: boolean;
   onSelectionChange?: (nodeIds: string[], jointIds: string[]) => void;
   externalSelection?: SelectionState | null;
+  refGeometry?: RefGeometryNode[];
+  onNodeClick?: (nodeId: string) => boolean; // Return true to consume the click (prevent selection)
 };
 
 export const RobotDefinitionPanel = ({
@@ -132,7 +134,9 @@ export const RobotDefinitionPanel = ({
   canUndo,
   canRedo,
   onSelectionChange,
-  externalSelection
+  externalSelection,
+  refGeometry = [],
+  onNodeClick
 }: RobotDefinitionPanelProps) => {
   const [selection, setSelection] = useState<SelectionState>({ nodeIds: [], jointIds: [] });
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
@@ -370,7 +374,7 @@ export const RobotDefinitionPanel = ({
     setZoom(nextZoom);
   };
 
-  const handleFit = () => {
+  const handleFit = useCallback(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const scaleX = rect.width / layout.width;
@@ -381,12 +385,12 @@ export const RobotDefinitionPanel = ({
       x: (rect.width - layout.width * nextZoom) / 2,
       y: (rect.height - layout.height * nextZoom) / 2
     });
-  };
+  }, [layout]);
 
   useEffect(() => {
     if (!containerRef.current) return;
     handleFit();
-  }, []);
+  }, [handleFit]); // Re-fit whenever layout changes (node add/remove)
 
   const activeNode = selection.nodeIds.length === 1 ? nodeMap.get(selection.nodeIds[0]) ?? null : null;
   const activeJoint = selection.jointIds.length === 1 ? jointMap.get(selection.jointIds[0]) ?? null : null;
@@ -497,6 +501,7 @@ export const RobotDefinitionPanel = ({
                       onMouseLeave={() => setHoveredNodeId(prev => (prev === node.id ? null : prev))}
                       onClick={(event) => {
                         event.stopPropagation();
+                        if (onNodeClick && onNodeClick(node.id)) return;
                         handleSelectNode(node.id, event.ctrlKey || event.metaKey);
                       }}
                       onDoubleClick={(event) => {
@@ -591,6 +596,20 @@ export const RobotDefinitionPanel = ({
                   <option value="body">Body</option>
                   <option value="sensor">Sensor</option>
                   <option value="frame">Frame</option>
+                </select>
+              </div>
+              <div className="robot-def-field">
+                <label>{activeNode.type === 'frame' ? 'Frame' : 'Origin Frame'}</label>
+                <select
+                  value={activeNode.frameId || ''}
+                  onChange={(event) => updateNode(activeNode.id, { frameId: event.target.value || undefined })}
+                >
+                  <option value="">(None)</option>
+                  {refGeometry.map(ref => (
+                    <option key={ref.id} value={ref.id}>
+                      {ref.path}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="robot-def-field">

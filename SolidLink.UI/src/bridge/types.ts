@@ -80,6 +80,7 @@ export interface RobotNode {
   type: RobotNodeType;
   children: string[];
   geometryIds: string[];
+  frameId?: string;
 }
 
 export interface RobotJoint {

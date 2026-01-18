@@ -454,11 +454,21 @@ function App() {
   const robotResizeRef = useRef<{ startY: number; startRatio: number } | null>(null);
 
 
+  const [refPickMode, setRefPickMode] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
     lastMessage: 'None',
     renderTime: new Date().toLocaleTimeString()
   })
+
+  const handleRefPickStart = useCallback((id: string) => {
+    setRefPickMode(id);
+    setRefContextMenu(null);
+  }, []);
+
+  const handleRefPickCancel = useCallback(() => {
+    setRefPickMode(null);
+  }, []);
 
   useEffect(() => {
     const check = setInterval(() => {
@@ -705,6 +715,20 @@ function App() {
     });
     bridgeClient.send(MessageTypes.ROBOT_DEF_UPDATE, next);
   }, []);
+
+  const handleRefPickAssign = useCallback((nodeId: string) => {
+    if (!refPickMode) return;
+    
+    const nextNodes = robotDefinition.nodes.map(node => {
+        if (node.id === nodeId) {
+            return { ...node, frameId: refPickMode };
+        }
+        return node;
+    });
+    
+    commitRobotDefinition({ ...robotDefinition, nodes: nextNodes });
+    setRefPickMode(null);
+  }, [refPickMode, robotDefinition, commitRobotDefinition]);
 
   const replaceRobotDefinition = useCallback((next: RobotDefinition) => {
     setRobotHistory({ past: [], present: next, future: [] });
@@ -1268,6 +1292,8 @@ function App() {
               canRedo={canRedoRobot}
               onSelectionChange={handleRobotSelectionChange}
               externalSelection={robotSelection}
+              refGeometry={refGeometry}
+              onNodeClick={refPickMode ? (nodeId) => { handleRefPickAssign(nodeId); return true; } : undefined}
             />
           </div>
         </div>
@@ -1387,6 +1413,48 @@ function App() {
           >
             {refMenuOriginVisible ? 'Hide Origin' : 'Show Origin'}
           </button>
+          <button
+            onClick={() => handleRefPickStart(refContextMenu.id)}
+            style={{ textAlign: 'left' }}
+          >
+            Add to Node...
+          </button>
+        </div>
+      )}
+
+      {refPickMode && (
+        <div style={{
+            position: 'fixed',
+            top: '60px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--color-primary)',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontSize: '0.9rem'
+        }}>
+            <span>Select a node in the Robot Definition panel to assign <strong>{refGeometry.find(r => r.id === refPickMode)?.path}</strong></span>
+            <button 
+                onClick={handleRefPickCancel}
+                style={{ 
+                    background: 'rgba(0,0,0,0.2)', 
+                    border: 'none', 
+                    borderRadius: '50%', 
+                    width: '24px', 
+                    height: '24px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white'
+                }}
+            >✕</button>
         </div>
       )}
 

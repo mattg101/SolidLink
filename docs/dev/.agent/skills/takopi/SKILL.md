@@ -27,6 +27,13 @@ Examples:
 /solidlink fix build warnings
 ```
 
+## File Operations
+
+When asking the user to download files via Takopi's `/file get` command:
+- Use **relative paths** from the current working directory (project root).
+- Avoid absolute paths (e.g., `C:\...`) as they may be rejected by the harness or sandbox.
+- If a file is in a hidden directory (like `.worktrees`), ensure the relative path includes it (e.g., `test_artifacts.tar.gz` if at root, or `subdir/file.ext`).
+
 ## Topics (Telegram forums)
 
 In topic threads, use `/topic` and `/ctx` to bind a project/branch context. Use `/new` to reset stored session context.

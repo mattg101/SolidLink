@@ -167,3 +167,16 @@ test('undo/redo works', async ({ page }) => {
   
   await expect(node.locator('.robot-node-title')).toHaveText('ChangedName');
 });
+
+test('shows origin frame field in metadata', async ({ page }) => {
+  await loadPage(page);
+  
+  const node = page.locator('.robot-node-group').first();
+  await node.click();
+  
+  const originLabel = page.locator('label', { hasText: /Origin Frame|Frame/ });
+  await expect(originLabel).toBeVisible();
+  
+  const select = page.locator('.robot-def-field select').nth(1); // 0 is Type, 1 is Origin/Frame
+  await expect(select).toBeVisible();
+});
