@@ -5,7 +5,7 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid } from '@react-three/drei';
-import { Box3, Matrix4, Vector3, Quaternion, Euler } from 'three';
+import { Box3, Matrix4, Vector3, Quaternion, Euler, Mesh, PerspectiveCamera as ThreePerspectiveCamera } from 'three';
 import { useSelection } from '../../context/SelectionContext';
 import { log } from '../../utils/logger';
 
@@ -35,7 +35,20 @@ interface Frame {
   children: Frame[];
 }
 
-type RegisterMesh = (frameId: string, mesh: THREE.Mesh) => () => void;
+interface RefGeometryNode {
+  id: string;
+  type: 'axis' | 'csys';
+  name: string;
+  path: string;
+  parentPath: string;
+  localTransform?: {
+    position?: number[];
+    rotation?: number[];
+    matrix?: number[];
+  };
+}
+
+type RegisterMesh = (frameId: string, mesh: Mesh) => () => void;
 
 const MeshVisual = ({
   frameId,
@@ -58,7 +71,7 @@ const MeshVisual = ({
   onSelect: (e: any) => void;
   onHover: (hovered: boolean, e: any) => void;
 }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<Mesh>(null);
   const posArray = useMemo(() => new Float32Array(visual.meshData.positions), [visual.meshData.positions]);
   const indArray = useMemo(() => new Uint32Array(visual.meshData.indices), [visual.meshData.indices]);
   const baseColor = `rgb(${visual.color[0] * 255}, ${visual.color[1] * 255}, ${visual.color[2] * 255})`;
@@ -222,9 +235,7 @@ const RobotMesh = ({ frame, registerMesh, visibleIds }: { frame: Frame; register
 const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; registerMesh: RegisterMesh; visibleIds?: Set<string> | null }) => {
   const { selectedIds, hoveredId, selectSingle, toggleSelection, setSelection, setHover } = useSelection();
   const isVisible = !visibleIds || visibleIds.has(frame.id);
-
   const hasMeshes = !!frame.links?.some(link => link.visuals?.some(visual => visual.type === 'mesh' && visual.meshData));
-  if (!isVisible || !hasMeshes) return null;
 
   const isSelected = selectedIds.includes(frame.id);
   const isHovered = hoveredId === frame.id;
@@ -261,6 +272,8 @@ const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; regi
     return { position: p, quaternion: q };
   }, [frame.localTransform]);
 
+  if (!isVisible || !hasMeshes) return null;
+
   return (
     <group position={position} quaternion={quaternion}>
       {frame.links?.map((link, lIdx) => (
@@ -281,6 +294,74 @@ const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; regi
           ) : null
         ))
       ))}
+    </group>
+  );
+};
+
+const AxisLine = ({ size = 0.12, color = '#f5c16c' }: { size?: number; color?: string }) => {
+  const positions = useMemo(() => new Float32Array([-size, 0, 0, size, 0, 0]), [size]);
+  return (
+    <line>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial color={color} />
+    </line>
+  );
+};
+
+const RefGeometryGlyph = ({
+  node,
+  showOrigin
+}: {
+  node: RefGeometryNode;
+  showOrigin: boolean;
+}) => {
+  const { position, quaternion } = useMemo(() => {
+    const matrix = node.localTransform?.matrix;
+    if (!matrix || matrix.length < 12) {
+      return {
+        position: new Vector3(
+          node.localTransform?.position?.[0] || 0,
+          node.localTransform?.position?.[1] || 0,
+          node.localTransform?.position?.[2] || 0
+        ),
+        quaternion: new Quaternion(0, 0, 0, 1)
+      };
+    }
+    const m = new Matrix4();
+    m.set(
+      matrix[0], matrix[3], matrix[6], matrix[9],
+      matrix[1], matrix[4], matrix[7], matrix[10],
+      matrix[2], matrix[5], matrix[8], matrix[11],
+      0, 0, 0, 1
+    );
+    const p = new Vector3();
+    const q = new Quaternion();
+    const s = new Vector3();
+    m.decompose(p, q, s);
+    return { position: p, quaternion: q };
+  }, [node.localTransform?.matrix, node.localTransform?.position]);
+
+  return (
+    <group position={position} quaternion={quaternion}>
+      {node.type === 'csys' ? (
+        <axesHelper args={[0.15]} />
+      ) : (
+        <AxisLine />
+      )}
+      {showOrigin && (
+        <mesh>
+          <sphereGeometry args={[0.012, 12, 12]} />
+          <meshStandardMaterial color="#f5c16c" emissive="#f5c16c" emissiveIntensity={0.35} />
+        </mesh>
+      )}
     </group>
   );
 };
@@ -312,10 +393,22 @@ const RenderReadbackBridge = ({ enabled }: { enabled: boolean }) => {
   return null;
 };
 
-export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<string> | null }) => {
+export const Viewport = ({
+  tree,
+  visibleIds,
+  refGeometry,
+  refOriginVisibility,
+  hiddenRefIds
+}: {
+  tree: any;
+  visibleIds?: Set<string> | null;
+  refGeometry?: RefGeometryNode[];
+  refOriginVisibility?: Record<string, boolean>;
+  hiddenRefIds?: Set<string>;
+}) => {
   const { selectedIds, setSelection, clearSelection } = useSelection();
   const containerRef = useRef<HTMLDivElement>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera>(null);
+  const cameraRef = useRef<ThreePerspectiveCamera>(null);
   const [isDraggingSelection, setIsDraggingSelection] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ start: Vector3; end: Vector3 } | null>(null);
   const dragStateRef = useRef<{
@@ -324,7 +417,7 @@ export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<str
     moved: boolean;
     pointerId: number;
   } | null>(null);
-  const meshRegistry = useRef<Map<string, Set<THREE.Mesh>>>(new Map());
+  const meshRegistry = useRef<Map<string, Set<Mesh>>>(new Map());
 
   const updateMeshRegistryDebug = useCallback(() => {
     if (!import.meta.env.DEV) return;
@@ -520,6 +613,11 @@ export const Viewport = ({ tree, visibleIds }: { tree: any; visibleIds?: Set<str
         <Grid infiniteGrid sectionSize={0.1} cellSize={0.02} />
 
         {tree && tree.rootFrame && <RobotMesh frame={tree.rootFrame} registerMesh={registerMesh} visibleIds={visibleIds} />}
+        {refGeometry?.map(node => {
+          if (hiddenRefIds?.has(node.id)) return null;
+          const showOrigin = refOriginVisibility?.[node.id] ?? false;
+          return <RefGeometryGlyph key={node.id} node={node} showOrigin={showOrigin} />;
+        })}
         <RenderReadbackBridge enabled={import.meta.env.DEV} />
       </Canvas>
       {selectionRect && (

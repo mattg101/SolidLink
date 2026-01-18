@@ -1,0 +1,18 @@
+{
+  "title": "SinglePart",
+  "type": "Part",
+  "unitToMeters": 0.001,
+  "rootComponent": {
+    "name": "Part-Root",
+    "transform": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    "materialColor": [0.3, 0.3, 0.3, 1.0],
+    "bodies": [
+      {
+        "name": "PartBody",
+        "tessellation": [0, 0, 0, 0.1, 0, 0, 0, 0.1, 0]
+      }
+    ],
+    "children": [],
+    "referenceFrames": []
+  }
+}

@@ -1,13 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
 :root {
-  --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-accent: #38bdf8;
-  --color-border: #334155;
-  --color-success: #22c55e;
-  --color-error: #ef4444;
-  --font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --color-bg-primary: #0d1523;
+  --color-bg-secondary: #1a2437;
+  --color-text-primary: #f2f6fb;
+  --color-text-secondary: #97abc2;
+  --color-accent: #2bc67f;
+  --color-border: #2e3f56;
+  --color-success: #2bc67f;
+  --color-error: #f26b5b;
+  --font-family: 'Outfit', sans-serif;
+  --font-family-display: 'Space Mono', monospace;
 }
 
 * {
@@ -18,7 +21,8 @@
 
 body {
   font-family: var(--font-family);
-  background-color: var(--color-bg-primary);
+  background: radial-gradient(120% 120% at 10% 10%, rgba(49, 121, 88, 0.25), transparent 55%),
+    linear-gradient(180deg, #0b1220 0%, #0a0f19 100%);
   color: var(--color-text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;

@@ -1,0 +1,9 @@
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\obj\x64\Debug\SolidLink.Headless.csproj.AssemblyReference.cache
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\obj\x64\Debug\SolidLink.Headless.csproj.CoreCompileInputs.cache
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\bin\x64\Debug\SolidLink.Headless.exe
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\bin\x64\Debug\SolidLink.Headless.pdb
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\bin\x64\Debug\Newtonsoft.Json.dll
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\bin\x64\Debug\Newtonsoft.Json.xml
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\obj\x64\Debug\SolidLin.60C20C32.Up2Date
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\obj\x64\Debug\SolidLink.Headless.exe
+C:\Users\mattg\OneDrive\Documents\Projects\dev\antigravity_dev\SolidLink\.worktrees\feat-robot-definition-ui\SolidLink.Headless\obj\x64\Debug\SolidLink.Headless.pdb

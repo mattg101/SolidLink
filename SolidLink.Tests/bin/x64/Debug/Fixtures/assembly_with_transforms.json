@@ -1,0 +1,31 @@
+{
+  "title": "AssemblyWithTransforms",
+  "type": "Assembly",
+  "unitToMeters": 0.001,
+  "rootComponent": {
+    "name": "Root-Trans",
+    "transform": [0, -1, 0, 1, 0, 0, 0, 0, 1, 0.1, 0.2, 0.3, 1],
+    "materialColor": [0.4, 0.4, 0.8, 1.0],
+    "bodies": [
+      {
+        "name": "RootBody",
+        "tessellation": [0, 0, 0, 0.3, 0, 0, 0, 0.3, 0]
+      }
+    ],
+    "children": [
+      {
+        "name": "Child-Trans",
+        "transform": [1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.4, 0.1, 1],
+        "materialColor": [0.9, 0.2, 0.4, 1.0],
+        "bodies": [
+          {
+            "name": "ChildBody",
+            "tessellation": [0, 0, 0, 0.2, 0, 0, 0, 0.2, 0]
+          }
+        ],
+        "children": []
+      }
+    ],
+    "referenceFrames": []
+  }
+}

@@ -1,2 +1,4 @@
 .worktrees/
 incoming/
+SolidLink.UI/test-results/
+test_artifacts.tar.gz

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Abstractions = SolidLink.Addin.Abstractions;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
@@ -13,6 +15,7 @@ namespace SolidLink.Addin.Adapters
     {
         private readonly ModelDoc2 _model;
         private Abstractions.IConfiguration _activeConfiguration;
+        private List<Abstractions.IReferenceFrame> _referenceFrames;
         private bool _disposed;
 
         public SolidWorksModelDocument(ModelDoc2 model)
@@ -47,6 +50,65 @@ namespace SolidLink.Addin.Adapters
             ?? (_activeConfiguration = ComHelpers.SafeCall(() => new SolidWorksConfiguration(_model)));
 
         public double UnitToMeters => UnitConversionHelper.GetUnitConversionFactor(_model);
+
+        public IEnumerable<Abstractions.IReferenceFrame> ReferenceFrames
+        {
+            get
+            {
+                if (_referenceFrames != null)
+                {
+                    return _referenceFrames;
+                }
+
+                _referenceFrames = new List<Abstractions.IReferenceFrame>();
+                Feature feature = null;
+                try
+                {
+                    string[] typesToExtract = { "CoordSys", "RefAxis", "RefPlane" };
+                    feature = _model.FirstFeature();
+                    while (feature != null)
+                    {
+                        string typeName = ComHelpers.SafeCall(() => feature.GetTypeName2(), string.Empty);
+                        if (typesToExtract.Contains(typeName))
+                        {
+                            var featureName = ComHelpers.SafeCall(() => feature.Name, string.Empty);
+                            double[] transformData = null;
+                            if (typeName == "CoordSys")
+                            {
+                                MathTransform swTransform = null;
+                                ModelDocExtension extension = null;
+                                try
+                                {
+                                    extension = _model.Extension;
+                                    swTransform = extension.GetCoordinateSystemTransformByName(featureName);
+                                    transformData = swTransform?.ArrayData as double[];
+                                }
+                                finally
+                                {
+                                    ComHelpers.ReleaseComObject(extension);
+                                    ComHelpers.ReleaseComObject(swTransform);
+                                }
+                            }
+
+                            _referenceFrames.Add(new SolidWorksReferenceFrame(featureName, typeName, transformData));
+                        }
+
+                        var next = ComHelpers.SafeCall(() => feature.GetNextFeature() as Feature);
+                        ComHelpers.ReleaseComObject(feature);
+                        feature = next;
+                    }
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    ComHelpers.ReleaseComObject(feature);
+                }
+
+                return _referenceFrames;
+            }
+        }
 
         public void Dispose()
         {
