@@ -242,6 +242,13 @@ export const RobotDefinitionPanel = ({
   };
 
   const handleAddChild = (parentId: string) => {
+    // Ensure parent is expanded so new child is visible in layout
+    setCollapsedIds(prev => {
+        const next = new Set(prev);
+        next.delete(parentId);
+        return next;
+    });
+
     const newId = `node-${Date.now()}`;
     const newJointId = `joint-${Date.now()}`;
     const parent = nodeMap.get(parentId);
