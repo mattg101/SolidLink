@@ -31,8 +31,20 @@ Examples:
 
 When asking the user to download files via Takopi's `/file get` command:
 - Use **relative paths** from the current working directory (project root).
-- Avoid absolute paths (e.g., `C:\...`) as they may be rejected by the harness or sandbox.
-- If a file is in a hidden directory (like `.worktrees`), ensure the relative path includes it (e.g., `test_artifacts.tar.gz` if at root, or `subdir/file.ext`).
+- Avoid absolute paths (e.g., `C:\...`) as they are rejected by the harness.
+- If a file is in a subdirectory, include the full relative path from the project root.
+
+Examples:
+```text
+/file get SolidLink.UI/test-results/robot-definition-renders-robot-definition-panel/test-finished-1.png
+/file get SolidLink.UI/test-results/viewport-shift-H-hides-sel-3bc76-es-and-updates-bridge-state/video.webm
+/file get docs/dev/orchestration/feature-spec__feat-example.md
+```
+
+When generating `/file get` commands for test artifacts:
+1. Run tests first to generate artifacts
+2. Use `find` or `ls` to locate artifact paths
+3. Format as relative paths from project root in code blocks
 
 ## Topics (Telegram forums)
 
