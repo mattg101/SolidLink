@@ -168,6 +168,74 @@ test('undo/redo works', async ({ page }) => {
   await expect(node.locator('.robot-node-title')).toHaveText('ChangedName');
 });
 
+test('auto-centers tree when loading new definition', async ({ page }) => {
+  await loadPage(page);
+  
+  // Create a large definition that would be off-center if not fitted
+  const largeDefinition = {
+    nodes: Array.from({ length: 10 }, (_, i) => ({
+      id: `node-${i}`,
+      name: `Node ${i}`,
+      type: 'body',
+      children: i < 9 ? [`node-${i + 1}`] : [],
+      geometryIds: []
+    })),
+    joints: Array.from({ length: 9 }, (_, i) => ({
+      id: `joint-${i}`,
+      parentId: `node-${i}`,
+      childId: `node-${i + 1}`,
+      type: 'fixed'
+    }))
+  };
+
+  // Simulate loading
+  await page.evaluate((payload) => {
+    const event = new MessageEvent('message', {
+      data: { type: 'ROBOT_DEF_LOAD', payload }
+    });
+    window.dispatchEvent(event);
+    // Also trigger via mock bridge listener manually if needed, but setupBridge handles window.chrome.webview
+    (window as any).__mockBridge__.send('ROBOT_DEF_LOAD', payload);
+  }, largeDefinition);
+
+  // Wait for layout update
+  await page.waitForTimeout(500);
+
+  // Check transform on the group
+  const group = page.locator('.robot-def-canvas-stage svg > g');
+  await expect(group).toBeVisible();
+  
+  // We can verify it's not at the default pan (0,0) or previous pan
+  // But strictly, we want to ensure it's centered.
+  // Using the bounding box logic from the centering test:
+  
+  const panel = page.locator('.robot-def-canvas-stage');
+  const panelBox = await panel.boundingBox();
+  if (!panelBox) throw new Error('Panel box not found');
+  
+  const nodes = page.locator('.robot-node-group');
+  await expect(nodes).toHaveCount(10);
+  
+  // Calculate content bounds
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < 10; i++) {
+    const box = await nodes.nth(i).boundingBox();
+    if (!box) continue;
+    minX = Math.min(minX, box.x);
+    maxX = Math.max(maxX, box.x + box.width);
+    minY = Math.min(minY, box.y);
+    maxY = Math.max(maxY, box.y + box.height);
+  }
+  
+  const contentCenterX = (minX + maxX) / 2;
+  const contentCenterY = (minY + maxY) / 2;
+  const panelCenterX = panelBox.x + panelBox.width / 2;
+  const panelCenterY = panelBox.y + panelBox.height / 2;
+  
+  expect(Math.abs(contentCenterX - panelCenterX)).toBeLessThan(20);
+  expect(Math.abs(contentCenterY - panelCenterY)).toBeLessThan(20);
+});
+
 test('shows origin frame field in metadata', async ({ page }) => {
   await loadPage(page);
   
