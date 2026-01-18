@@ -10,10 +10,18 @@ import {
   demoHideShow,
   demoRobotDefinition,
   demoUndoRedo,
+  demoRefGeometry,
+  demoViewportInteraction,
 } from './showcase-demos';
 
 const fixture = JSON.parse(
-  readFileSync(new URL('../src/test/fixtures/assembly_simple.json', import.meta.url), 'utf-8')
+  readFileSync(new URL('../src/test/fixtures/showcase_assembly.json', import.meta.url), 'utf-8')
+);
+const refFixture = JSON.parse(
+  readFileSync(new URL('../src/test/fixtures/showcase_ref_geometry.json', import.meta.url), 'utf-8')
+);
+const robotDefFixture = JSON.parse(
+  readFileSync(new URL('../src/test/fixtures/showcase_robot_def.json', import.meta.url), 'utf-8')
 );
 
 const setupBridge = async (page: any) => {
@@ -46,22 +54,36 @@ const setupBridge = async (page: any) => {
 const loadPage = async (page: any) => {
   await setupBridge(page);
   await page.goto('/');
-  await page.evaluate((payload: any) => {
-    (window as any).__mockBridge__.send('TREE_RESPONSE', payload);
-  }, fixture);
+  await page.evaluate(({ tree, refs, robot }) => {
+    const bridge = (window as any).__mockBridge__;
+    bridge.send('TREE_RESPONSE', tree);
+    bridge.send('REF_GEOMETRY_LIST', refs);
+    bridge.send('ROBOT_DEF_LOAD', robot);
+  }, { tree: fixture, refs: refFixture, robot: robotDefFixture });
+  
+  // Wait for 3D Viewport to have meshes
+  await page.waitForFunction(() => {
+    const registry = (window as any).__meshRegistry__;
+    return registry && Object.keys(registry).length > 0;
+  });
+  
   // Wait for UI to stabilize
   await page.waitForTimeout(500);
 };
 
 test.describe('Showcase', () => {
   test('all features demo', async ({ page }, testInfo) => {
-    test.setTimeout(300000); // 5 minutes max
+    // 5 minutes max (should be much faster now with reduced delays)
+    test.setTimeout(300000); 
     
     await loadPage(page);
     
     // Introduction
     await setLabel(page, '✨ SolidLink Feature Showcase');
     await pause(page, 1500);
+    
+    // Viewport Interaction (Show off the model)
+    await demoViewportInteraction(page);
     
     // Tree Navigation
     await demoTreeNavigation(page);
@@ -71,6 +93,9 @@ test.describe('Showcase', () => {
     
     // Hide/Show
     await demoHideShow(page);
+    
+    // Ref Geometry
+    await demoRefGeometry(page);
     
     // Robot Definition
     await demoRobotDefinition(page);

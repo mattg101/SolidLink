@@ -24,9 +24,9 @@ export default defineConfig({
         animations: 'allow',
         video: {
           mode: 'on',
-          size: { width: 1920, height: 1080 },
+          size: { width: 854, height: 480 },
         },
-        viewport: { width: 1920, height: 1080 },
+        viewport: { width: 854, height: 480 },
       },
     },
   ],

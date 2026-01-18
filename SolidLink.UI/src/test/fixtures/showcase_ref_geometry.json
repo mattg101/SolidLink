@@ -1,0 +1,6 @@
+[
+  { "id": "ref-origin", "path": "Origin", "type": "axis" },
+  { "id": "ref-plane-top", "path": "Top Plane", "type": "plane" },
+  { "id": "ref-plane-front", "path": "Front Plane", "type": "plane" },
+  { "id": "ref-axis-1", "path": "Axis-1", "type": "axis" }
+]

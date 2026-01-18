@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 
-export const DEMO_DELAY = 600; // ms between actions for visibility
+export const DEMO_DELAY = 300; // ms between actions for visibility
 
 export const setLabel = async (page: Page, label: string) => {
   await page.evaluate((text) => {
@@ -8,7 +8,7 @@ export const setLabel = async (page: Page, label: string) => {
       (window as any).__setTestLabel__(text);
     }
   }, label);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(200);
 };
 
 export const clearLabel = async (page: Page) => {

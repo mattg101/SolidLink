@@ -3,3 +3,5 @@ export { demoTreeNavigation } from './tree-navigation';
 export { demoTreeFilter } from './tree-filter';
 export { demoHideShow } from './hide-show';
 export { demoRobotDefinition, demoUndoRedo } from './robot-definition';
+export { demoViewportInteraction } from './viewport-interaction';
+export { demoRefGeometry } from './ref-geometry';
