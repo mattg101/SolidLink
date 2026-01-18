@@ -5,7 +5,7 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid } from '@react-three/drei';
-import { Box3, Matrix4, Vector3, Quaternion, Euler } from 'three';
+import { Box3, Matrix4, Vector3, Quaternion, Euler, Mesh, PerspectiveCamera as ThreePerspectiveCamera } from 'three';
 import { useSelection } from '../../context/SelectionContext';
 import { log } from '../../utils/logger';
 
@@ -48,7 +48,7 @@ interface RefGeometryNode {
   };
 }
 
-type RegisterMesh = (frameId: string, mesh: THREE.Mesh) => () => void;
+type RegisterMesh = (frameId: string, mesh: Mesh) => () => void;
 
 const MeshVisual = ({
   frameId,
@@ -71,7 +71,7 @@ const MeshVisual = ({
   onSelect: (e: any) => void;
   onHover: (hovered: boolean, e: any) => void;
 }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<Mesh>(null);
   const posArray = useMemo(() => new Float32Array(visual.meshData.positions), [visual.meshData.positions]);
   const indArray = useMemo(() => new Uint32Array(visual.meshData.indices), [visual.meshData.indices]);
   const baseColor = `rgb(${visual.color[0] * 255}, ${visual.color[1] * 255}, ${visual.color[2] * 255})`;
@@ -235,9 +235,7 @@ const RobotMesh = ({ frame, registerMesh, visibleIds }: { frame: Frame; register
 const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; registerMesh: RegisterMesh; visibleIds?: Set<string> | null }) => {
   const { selectedIds, hoveredId, selectSingle, toggleSelection, setSelection, setHover } = useSelection();
   const isVisible = !visibleIds || visibleIds.has(frame.id);
-
   const hasMeshes = !!frame.links?.some(link => link.visuals?.some(visual => visual.type === 'mesh' && visual.meshData));
-  if (!isVisible || !hasMeshes) return null;
 
   const isSelected = selectedIds.includes(frame.id);
   const isHovered = hoveredId === frame.id;
@@ -273,6 +271,8 @@ const RobotMeshFlat = ({ frame, registerMesh, visibleIds }: { frame: Frame; regi
     m.decompose(p, q, s);
     return { position: p, quaternion: q };
   }, [frame.localTransform]);
+
+  if (!isVisible || !hasMeshes) return null;
 
   return (
     <group position={position} quaternion={quaternion}>
@@ -408,7 +408,7 @@ export const Viewport = ({
 }) => {
   const { selectedIds, setSelection, clearSelection } = useSelection();
   const containerRef = useRef<HTMLDivElement>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera>(null);
+  const cameraRef = useRef<ThreePerspectiveCamera>(null);
   const [isDraggingSelection, setIsDraggingSelection] = useState(false);
   const [selectionRect, setSelectionRect] = useState<{ start: Vector3; end: Vector3 } | null>(null);
   const dragStateRef = useRef<{
@@ -417,7 +417,7 @@ export const Viewport = ({
     moved: boolean;
     pointerId: number;
   } | null>(null);
-  const meshRegistry = useRef<Map<string, Set<THREE.Mesh>>>(new Map());
+  const meshRegistry = useRef<Map<string, Set<Mesh>>>(new Map());
 
   const updateMeshRegistryDebug = useCallback(() => {
     if (!import.meta.env.DEV) return;

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using SolidLink.Addin.Abstractions;
 
 namespace SolidLink.Tests.Mocks
@@ -49,5 +51,7 @@ namespace SolidLink.Tests.Mocks
         }
 
         public double UnitToMeters => _fixtureData.UnitToMeters ?? 0.0254;
+
+        public IEnumerable<IReferenceFrame> ReferenceFrames => Enumerable.Empty<IReferenceFrame>();
     }
 }

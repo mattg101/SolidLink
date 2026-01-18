@@ -119,6 +119,8 @@ type RobotDefinitionPanelProps = {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onSelectionChange?: (nodeIds: string[], jointIds: string[]) => void;
+  externalSelection?: SelectionState | null;
 };
 
 export const RobotDefinitionPanel = ({
@@ -128,7 +130,9 @@ export const RobotDefinitionPanel = ({
   onUndo,
   onRedo,
   canUndo,
-  canRedo
+  canRedo,
+  onSelectionChange,
+  externalSelection
 }: RobotDefinitionPanelProps) => {
   const [selection, setSelection] = useState<SelectionState>({ nodeIds: [], jointIds: [] });
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
@@ -143,6 +147,26 @@ export const RobotDefinitionPanel = ({
   const nodeMap = useMemo(() => buildNodeMap(definition), [definition]);
   const jointMap = useMemo(() => buildJointMap(definition), [definition]);
   const layout = useMemo(() => layoutTree(definition, collapsedIds), [definition, collapsedIds]);
+
+  useEffect(() => {
+    if (!externalSelection) return;
+    setSelection(prev => {
+      // Avoid infinite loop by shallow check
+      if (
+        prev.nodeIds.length === externalSelection.nodeIds.length &&
+        prev.jointIds.length === externalSelection.jointIds.length &&
+        prev.nodeIds.every(id => externalSelection.nodeIds.includes(id)) &&
+        prev.jointIds.every(id => externalSelection.jointIds.includes(id))
+      ) {
+        return prev;
+      }
+      return externalSelection;
+    });
+  }, [externalSelection]);
+
+  useEffect(() => {
+    onSelectionChange?.(selection.nodeIds, selection.jointIds);
+  }, [selection, onSelectionChange]);
 
   useEffect(() => {
     if (!selection.nodeIds.length && !selection.jointIds.length) return;
@@ -234,7 +258,7 @@ export const RobotDefinitionPanel = ({
       id: newJointId,
       parentId,
       childId: newId,
-      type: 'fixed'
+      type: 'fixed' as const
     }];
     updateDefinition({ ...definition, nodes: [...nextNodes, newNode], joints: nextJoints });
     setSelection({ nodeIds: [newId], jointIds: [] });

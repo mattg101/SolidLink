@@ -500,7 +500,9 @@ function App() {
   // also listen for TREE_RESPONSE
   useBridge<RobotTree>('TREE_RESPONSE', (message) => {
     log(`Received TREE_RESPONSE for model: ${message.payload?.name}`, 'info');
-    setTree(message.payload);
+    if (message.payload) {
+      setTree(message.payload);
+    }
   })
 
   useBridge<RobotDefinition>(MessageTypes.ROBOT_DEF_LOAD, (message) => {
@@ -566,11 +568,16 @@ function App() {
 
   const loadMockTree = async () => {
     if (!isDev) return;
-    const { mockTrees } = await import('./fixtures/mockTrees');
-    const next = mockTrees[mockIndex] ?? mockTrees[0];
-    setTree(next.tree as RobotTree);
-    setConnectionStatus('disconnected');
-    log(`Loaded mock tree: ${next.label}`, 'info');
+    try {
+      // @ts-ignore - Dynamic import might fail type check if file doesn't match expected structure exactly
+      const { mockTree } = await import('./fixtures/mockTree');
+      // Wrap it to match expected structure if needed, or just set it
+      setTree(mockTree as unknown as RobotTree); 
+      setConnectionStatus('disconnected');
+      log(`Loaded mock tree: ${mockTree.name}`, 'info');
+    } catch (e) {
+      console.error("Failed to load mock tree", e);
+    }
   };
 
   const handleSidebarResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -681,6 +688,15 @@ function App() {
   const robotDefinition = robotHistory.present;
   const canUndoRobot = robotHistory.past.length > 0;
   const canRedoRobot = robotHistory.future.length > 0;
+
+  const robotSelection = useMemo(() => {
+    if (selectedIds.length === 0) return null;
+    const selectedNodes = robotDefinition.nodes.filter(node => 
+      node.geometryIds.some(id => selectedIds.includes(id))
+    );
+    const nodeIds = selectedNodes.map(node => node.id);
+    return nodeIds.length > 0 ? { nodeIds, jointIds: [] } : null;
+  }, [selectedIds, robotDefinition]);
 
   const commitRobotDefinition = useCallback((next: RobotDefinition) => {
     setRobotHistory(prev => {
@@ -933,6 +949,24 @@ function App() {
     setRefSelectedId(id);
     setRefContextMenu({ x: point.x, y: point.y, id });
   }, []);
+
+  const handleRobotSelectionChange = useCallback((nodeIds: string[], _jointIds: string[]) => {
+    if (nodeIds.length === 0) {
+      // Optional: Clear selection if we want strict sync
+      // clearSelection();
+      return;
+    }
+    const geometryIds = new Set<string>();
+    nodeIds.forEach(nodeId => {
+      const node = robotDefinition.nodes.find(n => n.id === nodeId);
+      if (node) {
+        node.geometryIds.forEach(gid => geometryIds.add(gid));
+      }
+    });
+    if (geometryIds.size > 0) {
+      setSelection(Array.from(geometryIds));
+    }
+  }, [robotDefinition, setSelection]);
 
   const selectionHasHidden = selectedIds.some(id => hiddenIdSet.has(id));
   const selectionHasVisible = selectedIds.some(id => !hiddenIdSet.has(id));
@@ -1232,6 +1266,8 @@ function App() {
               }}
               canUndo={canUndoRobot}
               canRedo={canRedoRobot}
+              onSelectionChange={handleRobotSelectionChange}
+              externalSelection={robotSelection}
             />
           </div>
         </div>

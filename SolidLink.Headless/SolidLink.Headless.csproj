@@ -48,7 +48,7 @@
     <Compile Include="..\SolidLink.Addin\Model\*.cs">
       <Link>Model\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\SolidLink.Addin\Services\*.cs">
+    <Compile Include="..\SolidLink.Addin\Services\*.cs" Exclude="..\SolidLink.Addin\Services\HiddenStateService.cs">
       <Link>Services\%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
