@@ -2,16 +2,25 @@ import { Page, expect } from '@playwright/test';
 import { setLabel, pause, DEMO_DELAY } from './helpers';
 
 export const demoTreeNavigation = async (page: Page) => {
-  await setLabel(page, '🌳 Tree Navigation - Expand Tree');
+  await setLabel(page, '🌳 Tree Navigation - Collapse/Expand');
   
   const base = page.locator('[data-frame-id="root"]');
   
-  // Click to expand the tree (clicking toggles open state)
+  // Tree starts expanded. Click to collapse root.
   await base.click();
   await pause(page, 400);
   
-  // Now arm should be visible, click to expand it too
+  // Click to expand root
+  await base.click();
+  await pause(page, 400);
+  
+  // Now arm should be visible
   const arm = page.locator('[data-frame-id="arm"]');
+  // Collapse arm
+  await arm.click();
+  await pause(page, 400);
+
+  // Expand arm
   await arm.click();
   await pause(page, 400);
   
@@ -32,24 +41,38 @@ export const demoTreeNavigation = async (page: Page) => {
   
   // Click to select (already expanded, so this just selects)
   await setLabel(page, '🌳 Tree Navigation - Click to Select');
-  await base.click();
+  await base.click(); // Collapses
+  await pause(page);
+  await base.click(); // Expands back, still selected
   await pause(page);
   
   // Multi-select with Ctrl
   await setLabel(page, '🌳 Tree Navigation - Ctrl+Click Multi-Select');
   await page.keyboard.down('Control');
-  await arm.click();
-  await pause(page);
+  // Select end first (leaf)
   await end.click();
+  await pause(page);
+  // Select arm (collapses, but end is already selected)
+  await arm.click();
   await page.keyboard.up('Control');
   await pause(page);
   
   // Clear and do range select
   await setLabel(page, '🌳 Tree Navigation - Shift+Click Range Select');
-  await base.click(); // clear and select base
+  await base.click(); // Selects base only (single select). Collapses? 
+  // Base is expanded. Click -> Collapses.
   await pause(page, 300);
+  await base.click(); // Expands back.
+  
   await page.keyboard.down('Shift');
-  await end.click();
+  // arm is collapsed from previous step. Need to expand it?
+  // If arm is collapsed, end is hidden.
+  // Shift+Click range needs visible target.
+  // We need to expand arm.
+  await arm.click(); // Expands arm. (Shift+Click -> Range Select?)
+  // Shift+Click on arm will Range Select Base..Arm.
+  // And expand it.
+  await end.click(); // Range select Base..End
   await page.keyboard.up('Shift');
   await pause(page);
   
