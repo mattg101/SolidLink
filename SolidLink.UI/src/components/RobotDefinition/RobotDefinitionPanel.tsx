@@ -398,11 +398,21 @@ export const RobotDefinitionPanel = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
+    
+    // Initial fit with small delay to allow layout/animation to settle
+    const timer = setTimeout(() => {
+        handleFit();
+    }, 50);
+
     const observer = new ResizeObserver(() => {
       handleFit();
     });
     observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    
+    return () => {
+        clearTimeout(timer);
+        observer.disconnect();
+    };
   }, [handleFit]);
 
   const activeNode = selection.nodeIds.length === 1 ? nodeMap.get(selection.nodeIds[0]) ?? null : null;
