@@ -446,6 +446,7 @@ function App() {
   const [refContextMenu, setRefContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
   const [refOriginVisibility, setRefOriginVisibility] = useState<Record<string, boolean>>({});
   const [hideOriginsGlobal, setHideOriginsGlobal] = useState(true);
+  const [frameOriginVisibility, setFrameOriginVisibility] = useState<Record<string, boolean>>({}); // For CAD tree origins
   const [mockIndex, setMockIndex] = useState(0);
   const { logs, log } = useLogger();
   const isDev = import.meta.env.DEV;
@@ -475,6 +476,18 @@ function App() {
 
   const handleRefPickCancel = useCallback(() => {
     setRefPickMode(null);
+  }, []);
+
+  const handleFrameOriginToggle = useCallback((frameId: string) => {
+    setFrameOriginVisibility(prev => ({ ...prev, [frameId]: !prev[frameId] }));
+    // Also update main origin visibility map for the viewport to see it
+    setRefOriginVisibility(prev => {
+      const next = { ...prev, [frameId]: !prev[frameId] };
+      // Tell backend/viewport
+      const payload: RefOriginTogglePayload = { id: frameId, showOrigin: next[frameId] };
+      bridgeClient.send(MessageTypes.REF_ORIGIN_TOGGLE, payload);
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -838,9 +851,34 @@ function App() {
   }, [tree, debouncedFilter, hiddenIdSet, orderedIds]);
 
   const visibleRefNodes = useMemo(() => {
-    if (showHidden) return refGeometry;
-    return refGeometry.filter(node => !hiddenIdSet.has(node.id));
-  }, [refGeometry, showHidden, hiddenIdSet]);
+    // Standard Ref Geometry from backend
+    const standard = showHidden 
+      ? refGeometry 
+      : refGeometry.filter(node => !hiddenIdSet.has(node.id));
+    
+    // Synthetic Ref Nodes from active Frame Origins
+    // We only add them if they are toggled ON in frameOriginVisibility
+    // AND they aren't already in standard list
+    const existingIds = new Set(standard.map(n => n.id));
+    const synthetic: RefGeometryNode[] = [];
+    
+    // Iterate all frames in frameOriginVisibility
+    Object.entries(frameOriginVisibility).forEach(([id, visible]) => {
+      if (!visible) return;
+      if (existingIds.has(id)) return;
+      
+      const frame = frameById.get(id);
+      if (frame) {
+        synthetic.push({
+          id: frame.id,
+          path: `Origin of ${frame.name}`,
+          type: 'axis' // Treat frame origin as axis/csys
+        });
+      }
+    });
+
+    return [...standard, ...synthetic];
+  }, [refGeometry, showHidden, hiddenIdSet, frameOriginVisibility, frameById]);
 
   const orderedRefNodes = useMemo(() => {
     return [...visibleRefNodes].sort((a, b) => a.path.localeCompare(b.path));
@@ -1195,6 +1233,7 @@ function App() {
             <div
               role="separator"
               aria-orientation="horizontal"
+              data-testid="resize-tree"
               tabIndex={0}
               onPointerDown={handleTreeResizeStart}
               onKeyDown={handleTreeResizeKeyDown}
@@ -1243,6 +1282,7 @@ function App() {
         <div
           role="separator"
           aria-orientation="vertical"
+          data-testid="resize-sidebar"
           tabIndex={0}
           onPointerDown={handleSidebarResizeStart}
           onKeyDown={handleSidebarResizeKeyDown}
@@ -1293,6 +1333,7 @@ function App() {
           <div
             role="separator"
             aria-orientation="horizontal"
+            data-testid="resize-robot"
             tabIndex={0}
             onPointerDown={handleRobotResizeStart}
             onKeyDown={handleRobotResizeKeyDown}
@@ -1384,6 +1425,19 @@ function App() {
               style={{ textAlign: 'left' }}
             >
               Unhide All
+            </button>
+          )}
+          {contextMenu && (
+            <button
+              onClick={() => {
+                // If we selected a node, we assume single selection for origin toggle for now
+                // or iterate all selectedIds
+                selectedIds.forEach(id => handleFrameOriginToggle(id));
+                setContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Toggle Origin
             </button>
           )}
         </div>
