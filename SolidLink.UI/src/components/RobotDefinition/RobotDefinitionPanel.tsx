@@ -18,11 +18,11 @@ type PanState = {
   origin: { x: number; y: number };
 };
 
-const NODE_WIDTH = 160;
-const NODE_HEIGHT = 52;
-const H_GAP = 180;
-const V_GAP = 28;
-const CANVAS_PADDING = 90;
+const NODE_WIDTH = 140;
+const NODE_HEIGHT = 44;
+const H_GAP = 160;
+const V_GAP = 24;
+const CANVAS_PADDING = 60;
 
 const NODE_STYLE: Record<RobotNodeType, { color: string; label: string }> = {
   body: { color: '#3A86FF', label: 'Body' },
@@ -536,50 +536,50 @@ export const RobotDefinitionPanel = ({
                       <rect
                         width={NODE_WIDTH}
                         height={NODE_HEIGHT}
-                        rx={12}
+                        rx={8}
                         className={`robot-node ${isSelected ? 'selected' : ''}`}
                         fill={NODE_STYLE[node.type].color}
                       />
                       <rect
-                        x={10}
-                        y={12}
-                        width={28}
-                        height={28}
-                        rx={8}
+                        x={8}
+                        y={10}
+                        width={24}
+                        height={24}
+                        rx={6}
                         className="robot-node-icon"
                       />
-                      <text x={24} y={30} textAnchor="middle" className="robot-node-icon-text">
+                      <text x={20} y={26} textAnchor="middle" className="robot-node-icon-text">
                         {node.type === 'body' ? 'B' : node.type === 'sensor' ? 'S' : 'F'}
                       </text>
-                      <text x={48} y={24} className="robot-node-title">{node.name}</text>
-                      <text x={48} y={40} className="robot-node-subtitle">{NODE_STYLE[node.type].label}</text>
+                      <text x={40} y={18} className="robot-node-title">{node.name}</text>
+                      <text x={40} y={32} className="robot-node-subtitle">{NODE_STYLE[node.type].label}</text>
                       {isCollapsed && (
-                        <circle cx={NODE_WIDTH - 14} cy={12} r={5} className="robot-node-collapse" />
+                        <circle cx={NODE_WIDTH - 12} cy={10} r={4} className="robot-node-collapse" />
                       )}
                       {isHovered && (
                         <>
                           <g
                             className="robot-node-action"
-                            transform={`translate(${NODE_WIDTH - 34} ${NODE_HEIGHT - 18})`}
+                            transform={`translate(${NODE_WIDTH - 28} ${NODE_HEIGHT - 14})`}
                             onClick={(event) => {
                               event.stopPropagation();
                               handleAddChild(node.id);
                             }}
                           >
-                            <circle r={10} />
-                            <line x1={-4} y1={0} x2={4} y2={0} />
-                            <line x1={0} y1={-4} x2={0} y2={4} />
+                            <circle r={8} />
+                            <line x1={-3} y1={0} x2={3} y2={0} />
+                            <line x1={0} y1={-3} x2={0} y2={3} />
                           </g>
                           <g
                             className="robot-node-action"
-                            transform={`translate(${NODE_WIDTH - 60} ${NODE_HEIGHT - 18})`}
+                            transform={`translate(${NODE_WIDTH - 50} ${NODE_HEIGHT - 14})`}
                             onClick={(event) => {
                               event.stopPropagation();
                               handleRemoveNode(node.id);
                             }}
                           >
-                            <circle r={10} />
-                            <line x1={-4} y1={0} x2={4} y2={0} />
+                            <circle r={8} />
+                            <line x1={-3} y1={0} x2={3} y2={0} />
                           </g>
                         </>
                       )}

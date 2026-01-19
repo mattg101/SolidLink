@@ -999,7 +999,7 @@ function App() {
   const refMenuHidden = refContextMenu ? hiddenIdSet.has(refContextMenu.id) : false;
 
   return (
-    <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div id="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: '600px', minHeight: '500px' }}>
       <TestLabel />
       {/* Header */}
       <header style={{
