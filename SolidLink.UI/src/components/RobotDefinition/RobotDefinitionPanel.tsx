@@ -594,122 +594,119 @@ export const RobotDefinitionPanel = ({
               </g>
             </svg>
           </div>
-        </div>
-        <div className="robot-def-meta">
-          <div className="robot-def-meta-title">Metadata</div>
-          {activeNode && (
-            <>
-              <div className="robot-def-field">
-                <label>Name</label>
-                <input
-                  value={activeNode.name}
-                  onChange={(event) => updateNode(activeNode.id, { name: event.target.value })}
-                />
-              </div>
-              <div className="robot-def-field">
-                <label>Node Type</label>
-                <select
-                  value={activeNode.type}
-                  onChange={(event) => updateNode(activeNode.id, { type: event.target.value as RobotNodeType })}
-                >
-                  <option value="body">Body</option>
-                  <option value="sensor">Sensor</option>
-                  <option value="frame">Frame</option>
-                </select>
-              </div>
-              <div className="robot-def-field">
-                <label>{activeNode.type === 'frame' ? 'Frame' : 'Origin Frame'}</label>
-                <select
-                  value={activeNode.frameId || ''}
-                  onChange={(event) => updateNode(activeNode.id, { frameId: event.target.value || undefined })}
-                >
-                  <option value="">(None)</option>
-                  {refGeometry.map(ref => (
-                    <option key={ref.id} value={ref.id}>
-                      {ref.path}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="robot-def-field">
-                <label>Geometry IDs</label>
-                <div className="robot-def-geometry">
-                  {activeNode.geometryIds.map(id => (
-                    <div key={id} className="robot-def-chip">
-                      <span>{id}</span>
+          {selectionCount > 0 && (
+            <div className="robot-def-meta">
+              <div className="robot-def-meta-title">Metadata</div>
+              {activeNode && (
+                <>
+                  <div className="robot-def-field">
+                    <label>Name</label>
+                    <input
+                      value={activeNode.name}
+                      onChange={(event) => updateNode(activeNode.id, { name: event.target.value })}
+                    />
+                  </div>
+                  <div className="robot-def-field">
+                    <label>Node Type</label>
+                    <select
+                      value={activeNode.type}
+                      onChange={(event) => updateNode(activeNode.id, { type: event.target.value as RobotNodeType })}
+                    >
+                      <option value="body">Body</option>
+                      <option value="sensor">Sensor</option>
+                      <option value="frame">Frame</option>
+                    </select>
+                  </div>
+                  <div className="robot-def-field">
+                    <label>{activeNode.type === 'frame' ? 'Frame' : 'Origin Frame'}</label>
+                    <select
+                      value={activeNode.frameId || ''}
+                      onChange={(event) => updateNode(activeNode.id, { frameId: event.target.value || undefined })}
+                    >
+                      <option value="">(None)</option>
+                      {refGeometry.map(ref => (
+                        <option key={ref.id} value={ref.id}>
+                          {ref.path}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="robot-def-field">
+                    <label>Geometry IDs</label>
+                    <div className="robot-def-geometry">
+                      {activeNode.geometryIds.map(id => (
+                        <div key={id} className="robot-def-chip">
+                          <span>{id}</span>
+                          <button
+                            onClick={() => {
+                              const next = activeNode.geometryIds.filter(entry => entry !== id);
+                              updateNode(activeNode.id, { geometryIds: next });
+                            }}
+                          >
+                            x
+                          </button>
+                        </div>
+                      ))}
                       <button
+                        className="robot-def-add-geometry"
                         onClick={() => {
-                          const next = activeNode.geometryIds.filter(entry => entry !== id);
-                          updateNode(activeNode.id, { geometryIds: next });
+                          const value = window.prompt('Add geometry id');
+                          if (!value) return;
+                          updateNode(activeNode.id, { geometryIds: [...activeNode.geometryIds, value] });
                         }}
                       >
-                        x
+                        Add geometry
                       </button>
                     </div>
-                  ))}
-                  <button
-                    className="robot-def-add-geometry"
-                    onClick={() => {
-                      const value = window.prompt('Add geometry id');
-                      if (!value) return;
-                      updateNode(activeNode.id, { geometryIds: [...activeNode.geometryIds, value] });
-                    }}
-                  >
-                    Add geometry
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-          {activeJoint && (
-            <>
-              <div className="robot-def-field">
-                <label>Joint Type</label>
-                <select
-                  value={activeJoint.type}
-                  onChange={(event) => updateJoint(activeJoint.id, { type: event.target.value as RobotJointType })}
-                >
-                  <option value="fixed">Fixed</option>
-                  <option value="revolute">Revolute</option>
-                  <option value="linear">Linear</option>
-                </select>
-              </div>
-              <div className="robot-def-field">
-                <label>Parent</label>
-                <div className="robot-def-readonly">{nodeMap.get(activeJoint.parentId)?.name ?? activeJoint.parentId}</div>
-              </div>
-              <div className="robot-def-field">
-                <label>Child</label>
-                <div className="robot-def-readonly">{nodeMap.get(activeJoint.childId)?.name ?? activeJoint.childId}</div>
-              </div>
-            </>
-          )}
-          {!activeNode && !activeJoint && selectionCount > 1 && (
-            <>
-              <div className="robot-def-field">
-                <label>Bulk Update</label>
-                {selection.nodeIds.length > 0 && (
-                  <select onChange={(event) => handleBulkNodeType(event.target.value as RobotNodeType)} defaultValue="">
-                    <option value="" disabled>Set node type</option>
-                    <option value="body">Body</option>
-                    <option value="sensor">Sensor</option>
-                    <option value="frame">Frame</option>
-                  </select>
-                )}
-                {selection.jointIds.length > 0 && (
-                  <select onChange={(event) => handleBulkJointType(event.target.value as RobotJointType)} defaultValue="">
-                    <option value="" disabled>Set joint type</option>
-                    <option value="fixed">Fixed</option>
-                    <option value="revolute">Revolute</option>
-                    <option value="linear">Linear</option>
-                  </select>
-                )}
-              </div>
-            </>
-          )}
-          {selectionCount === 0 && (
-            <div className="robot-def-empty">
-              Select a node or joint to edit metadata. Shift-drag selects joints.
+                  </div>
+                </>
+              )}
+              {activeJoint && (
+                <>
+                  <div className="robot-def-field">
+                    <label>Joint Type</label>
+                    <select
+                      value={activeJoint.type}
+                      onChange={(event) => updateJoint(activeJoint.id, { type: event.target.value as RobotJointType })}
+                    >
+                      <option value="fixed">Fixed</option>
+                      <option value="revolute">Revolute</option>
+                      <option value="linear">Linear</option>
+                    </select>
+                  </div>
+                  <div className="robot-def-field">
+                    <label>Parent</label>
+                    <div className="robot-def-readonly">{nodeMap.get(activeJoint.parentId)?.name ?? activeJoint.parentId}</div>
+                  </div>
+                  <div className="robot-def-field">
+                    <label>Child</label>
+                    <div className="robot-def-readonly">{nodeMap.get(activeJoint.childId)?.name ?? activeJoint.childId}</div>
+                  </div>
+                </>
+              )}
+              {!activeNode && !activeJoint && selectionCount > 1 && (
+                <>
+                  <div className="robot-def-field">
+                    <label>Bulk Update</label>
+                    {selection.nodeIds.length > 0 && (
+                      <select onChange={(event) => handleBulkNodeType(event.target.value as RobotNodeType)} defaultValue="">
+                        <option value="" disabled>Set node type</option>
+                        <option value="body">Body</option>
+                        <option value="sensor">Sensor</option>
+                        <option value="frame">Frame</option>
+                      </select>
+                    )}
+                    {selection.jointIds.length > 0 && (
+                      <select onChange={(event) => handleBulkJointType(event.target.value as RobotJointType)} defaultValue="">
+                        <option value="" disabled>Set joint type</option>
+                        <option value="fixed">Fixed</option>
+                        <option value="revolute">Revolute</option>
+                        <option value="linear">Linear</option>
+                      </select>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

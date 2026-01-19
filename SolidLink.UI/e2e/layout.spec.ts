@@ -49,14 +49,10 @@ test.describe('Layout', () => {
     const panel = page.locator('.robot-def-panel');
     await expect(panel).toBeVisible();
 
-    // Check Metadata panel visibility
+    // Check Metadata panel visibility - initially hidden (no selection)
     const meta = page.locator('.robot-def-meta');
-    await expect(meta).toBeVisible();
+    await expect(meta).toBeHidden();
     
-    // Check width of metadata panel (should be 220px as per CSS change)
-    const metaBox = await meta.boundingBox();
-    expect(metaBox?.width).toBe(220);
-
     // Verify canvas renders
     const stage = page.locator('.robot-def-canvas-stage');
     await expect(stage).toBeVisible();
@@ -72,6 +68,9 @@ test.describe('Layout', () => {
     const node = page.locator('.robot-node-group').first();
     await node.click();
     await page.waitForTimeout(200);
+    
+    // Now meta should be visible
+    await expect(meta).toBeVisible();
     
     await expect(page).toHaveScreenshot('layout-min-size-selected.png');
   });

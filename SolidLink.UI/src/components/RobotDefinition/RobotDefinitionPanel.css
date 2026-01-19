@@ -120,15 +120,23 @@
 }
 
 .robot-def-meta {
+  position: absolute;
+  right: 1rem;
+  top: 3.5rem;
   width: 220px;
-  border-left: 1px solid rgba(73, 99, 132, 0.7);
+  max-height: calc(100% - 4.5rem);
   padding: 0.65rem 0.65rem 1rem;
-  background: rgba(10, 16, 26, 0.9);
+  background: rgba(10, 16, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(73, 99, 132, 0.7);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   overflow-y: auto;
   min-height: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
 }
 
 .robot-def-meta-title {
