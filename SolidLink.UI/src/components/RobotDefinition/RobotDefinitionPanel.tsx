@@ -450,13 +450,11 @@ export const RobotDefinitionPanel = ({
           <button className="robot-def-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
           <button className="robot-def-button" onClick={onRedo} disabled={!canRedo}>Redo</button>
           <button className="robot-def-button robot-def-primary" onClick={onSave}>Save</button>
+          <button className="robot-def-button robot-def-ghost" onClick={handleFit}>Fit</button>
         </div>
       </div>
       <div className="robot-def-body">
         <div className="robot-def-canvas">
-          <div className="robot-def-canvas-toolbar">
-            <button className="robot-def-pill robot-def-ghost" onClick={handleFit}>Fit</button>
-          </div>
           <div
             ref={containerRef}
             className="robot-def-canvas-stage"
