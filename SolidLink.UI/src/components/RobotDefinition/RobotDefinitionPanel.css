@@ -28,14 +28,12 @@
   font-family: var(--font-family-display);
   font-size: 0.8rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: #e3f2f1;
 }
 
 .robot-def-subtitle {
   font-size: 0.72rem;
   color: #9cb5c8;
-  text-transform: uppercase;
   letter-spacing: 0.12em;
 }
 
@@ -52,7 +50,6 @@
   border-radius: 999px;
   font-size: 0.6rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
@@ -95,7 +92,6 @@
   padding: 0.1rem 0.3rem;
   border-radius: 999px;
   font-size: 0.55rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #9fb4c6;
   border: 1px solid rgba(116, 145, 172, 0.4);
@@ -123,7 +119,6 @@
   padding: 0.15rem 0.5rem;
   border-radius: 12px;
   font-size: 0.6rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: all 0.2s;
@@ -166,7 +161,6 @@
   font-family: var(--font-family-display);
   font-size: 0.65rem;
   letter-spacing: 0.15em;
-  text-transform: uppercase;
   color: #d3e6ee;
 }
 
@@ -179,7 +173,6 @@
 }
 
 .robot-def-field label {
-  text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.62rem;
   color: #7e9db4;
@@ -232,7 +225,6 @@
   border-radius: 8px;
   padding: 0.35rem 0.5rem;
   font-size: 0.68rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
