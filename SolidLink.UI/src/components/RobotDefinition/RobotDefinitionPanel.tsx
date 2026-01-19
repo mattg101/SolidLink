@@ -444,8 +444,7 @@ export const RobotDefinitionPanel = ({
     <div className="robot-def-panel">
       <div className="robot-def-header">
         <div className="robot-def-header-left">
-          <div className="robot-def-title">Robot Definition</div>
-          <div className="robot-def-subtitle">Tree, joints, and metadata</div>
+          <div className="robot-def-title">Robot Def</div>
         </div>
         <div className="robot-def-actions">
           <button className="robot-def-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
@@ -456,8 +455,6 @@ export const RobotDefinitionPanel = ({
       <div className="robot-def-body">
         <div className="robot-def-canvas">
           <div className="robot-def-canvas-toolbar">
-            <div className="robot-def-pill">{selectionCount} selected</div>
-            <div className="robot-def-pill">Shift drag selects joints</div>
             <button className="robot-def-pill robot-def-ghost" onClick={handleFit}>Fit</button>
             <div className="robot-def-pill">Zoom {Math.round(zoom * 100)}%</div>
           </div>

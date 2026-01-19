@@ -7,7 +7,6 @@
   border: 1px solid rgba(73, 99, 132, 0.7);
   border-radius: 14px;
   overflow: hidden;
-  animation: robot-panel-in 0.4s ease-out;
 }
 
 .robot-def-header {
@@ -89,6 +88,7 @@
   padding: 0.45rem 0.75rem;
   border-bottom: 1px solid rgba(73, 99, 132, 0.6);
   background: rgba(11, 17, 28, 0.7);
+  overflow: hidden;
 }
 
 .robot-def-pill {
@@ -99,6 +99,8 @@
   letter-spacing: 0.08em;
   color: #9fb4c6;
   border: 1px solid rgba(116, 145, 172, 0.4);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .robot-def-ghost {
@@ -131,8 +133,8 @@
 
 .robot-def-meta-title {
   font-family: var(--font-family-display);
-  font-size: 0.82rem;
-  letter-spacing: 0.2em;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: #d3e6ee;
 }

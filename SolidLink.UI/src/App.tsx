@@ -445,7 +445,7 @@ function App() {
   const isDev = import.meta.env.DEV;
   const isWebView = Boolean((window as WebViewWindow).chrome?.webview);
   const { selectedIds, setSelection, clearSelection } = useSelection();
-  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [sidebarWidth, setSidebarWidth] = useState(260);
   const [treeSplitRatio, setTreeSplitRatio] = useState(0.6);
   const [robotSplitRatio, setRobotSplitRatio] = useState(0.68);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -1080,7 +1080,7 @@ function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h2 style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                    Assembly Component Tree
+                    CAD Tree
                   </h2>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
@@ -1239,8 +1239,8 @@ function App() {
             style={{
               flexBasis: `${robotSplitRatio * 100}%`,
               flexGrow: 0,
-              flexShrink: 0,
-              minHeight: '220px',
+              flexShrink: 1,
+              minHeight: '100px',
               display: 'flex',
               position: 'relative',
               overflow: 'hidden',
@@ -1277,7 +1277,7 @@ function App() {
             style={{ height: '6px', cursor: 'row-resize', background: 'var(--color-border)' }}
           />
 
-          <div style={{ flex: 1, minHeight: '240px' }}>
+          <div style={{ flex: 1, minHeight: '100px' }}>
             <RobotDefinitionPanel
               definition={robotDefinition}
               onDefinitionChange={commitRobotDefinition}
