@@ -456,7 +456,6 @@ export const RobotDefinitionPanel = ({
         <div className="robot-def-canvas">
           <div className="robot-def-canvas-toolbar">
             <button className="robot-def-pill robot-def-ghost" onClick={handleFit}>Fit</button>
-            <div className="robot-def-pill">Zoom {Math.round(zoom * 100)}%</div>
           </div>
           <div
             ref={containerRef}
