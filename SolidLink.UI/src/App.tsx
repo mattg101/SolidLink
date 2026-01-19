@@ -419,6 +419,12 @@ const RefTreeItem = ({
   );
 };
 
+const MIN_SIDEBAR_WIDTH = 220;
+const MIN_TREE_PANEL_HEIGHT = 160;
+const MIN_REF_PANEL_HEIGHT = 160;
+const MIN_VIEWPORT_HEIGHT = 100;
+const MIN_ROBOT_DEF_HEIGHT = 100;
+
 function App() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
   const [tree, setTree] = useState<RobotTree | null>(null)
@@ -596,7 +602,7 @@ function App() {
     const handleMove = (event: PointerEvent) => {
       if (!sidebarResizeRef.current) return;
       const delta = event.clientX - sidebarResizeRef.current.startX;
-      const nextWidth = clamp(sidebarResizeRef.current.startWidth + delta, 220, 520);
+      const nextWidth = clamp(sidebarResizeRef.current.startWidth + delta, MIN_SIDEBAR_WIDTH, 800); // Increased max width
       setSidebarWidth(nextWidth);
     };
     const handleUp = () => {
@@ -615,7 +621,15 @@ function App() {
       if (!treeResizeRef.current || !sidebarRef.current) return;
       const rect = sidebarRef.current.getBoundingClientRect();
       const delta = event.clientY - treeResizeRef.current.startY;
-      const nextRatio = clamp((treeResizeRef.current.startRatio * rect.height + delta) / rect.height, 0.2, 0.8);
+      
+      // Calculate ratio based on constraints
+      const totalHeight = rect.height;
+      const minRatio = MIN_TREE_PANEL_HEIGHT / totalHeight;
+      const maxRatio = 1 - (MIN_REF_PANEL_HEIGHT / totalHeight);
+      
+      const rawRatio = (treeResizeRef.current.startRatio * rect.height + delta) / rect.height;
+      const nextRatio = clamp(rawRatio, minRatio, maxRatio);
+      
       setTreeSplitRatio(nextRatio);
     };
     const handleUp = () => {
@@ -634,7 +648,15 @@ function App() {
       if (!robotResizeRef.current || !rightPaneRef.current) return;
       const rect = rightPaneRef.current.getBoundingClientRect();
       const delta = event.clientY - robotResizeRef.current.startY;
-      const nextRatio = clamp((robotResizeRef.current.startRatio * rect.height + delta) / rect.height, 0.35, 0.85);
+      
+      // Calculate ratio based on constraints
+      const totalHeight = rect.height;
+      const minRatio = MIN_VIEWPORT_HEIGHT / totalHeight;
+      const maxRatio = 1 - (MIN_ROBOT_DEF_HEIGHT / totalHeight);
+      
+      const rawRatio = (robotResizeRef.current.startRatio * rect.height + delta) / rect.height;
+      const nextRatio = clamp(rawRatio, minRatio, maxRatio);
+      
       setRobotSplitRatio(nextRatio);
     };
     const handleUp = () => {
@@ -649,10 +671,10 @@ function App() {
   const handleSidebarResizeKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      setSidebarWidth(prev => clamp(prev - 12, 220, 520));
+      setSidebarWidth(prev => clamp(prev - 12, MIN_SIDEBAR_WIDTH, 800));
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
-      setSidebarWidth(prev => clamp(prev + 12, 220, 520));
+      setSidebarWidth(prev => clamp(prev + 12, MIN_SIDEBAR_WIDTH, 800));
     }
   }, []);
 
@@ -1058,8 +1080,8 @@ function App() {
           ref={sidebarRef}
           style={{
             width: `${sidebarWidth}px`,
-            minWidth: '220px',
-            maxWidth: '520px',
+            minWidth: `${MIN_SIDEBAR_WIDTH}px`,
+            maxWidth: '800px',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
@@ -1071,7 +1093,7 @@ function App() {
                 flexBasis: `${treeSplitRatio * 100}%`,
                 flexGrow: 0,
                 flexShrink: 0,
-                minHeight: '200px',
+                minHeight: `${MIN_TREE_PANEL_HEIGHT}px`,
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden'
@@ -1179,7 +1201,7 @@ function App() {
               style={{ height: '6px', cursor: 'row-resize', background: 'var(--color-border)', margin: '4px 0' }}
             />
 
-            <section style={{ flex: 1, minHeight: '160px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <section style={{ flex: 1, minHeight: `${MIN_REF_PANEL_HEIGHT}px`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <h2 style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
                   Ref Geometry Tree
@@ -1240,7 +1262,7 @@ function App() {
               flexBasis: `${robotSplitRatio * 100}%`,
               flexGrow: 0,
               flexShrink: 1,
-              minHeight: '100px',
+              minHeight: `${MIN_VIEWPORT_HEIGHT}px`,
               display: 'flex',
               position: 'relative',
               overflow: 'hidden',
@@ -1277,7 +1299,7 @@ function App() {
             style={{ height: '6px', cursor: 'row-resize', background: 'var(--color-border)' }}
           />
 
-          <div style={{ flex: 1, minHeight: '100px' }}>
+          <div style={{ flex: 1, minHeight: `${MIN_ROBOT_DEF_HEIGHT}px` }}>
             <RobotDefinitionPanel
               definition={robotDefinition}
               onDefinitionChange={commitRobotDefinition}
