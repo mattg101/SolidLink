@@ -331,7 +331,6 @@ const RefTreeItem = ({
   isSelected,
   isHidden,
   showHidden,
-  showOrigin,
   onSelect,
   onUnhide,
   onContextMenu
@@ -462,6 +461,7 @@ function App() {
   const robotResizeRef = useRef<{ startY: number; startRatio: number } | null>(null);
 
 
+  const [refPickMode, setRefPickMode] = useState<string | null>(null);
   const [activeRobotNodeId, setActiveRobotNodeId] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
@@ -541,7 +541,7 @@ function App() {
     if (!message.payload || message.payload.nodes.length === 0) {
         // Reset to default if empty
         replaceRobotDefinition(createDefaultRobotDefinition());
-        log('Loaded empty robot definition, reset to default', 'warning');
+        log('Loaded empty robot definition, reset to default', 'warn');
         return;
     }
     replaceRobotDefinition(message.payload);
@@ -878,8 +878,10 @@ function App() {
       if (frame) {
         synthetic.push({
           id: frame.id,
+          name: frame.name, // Added missing property
           path: `Origin of ${frame.name}`,
-          type: 'axis' // Treat frame origin as axis/csys
+          type: 'axis',
+          parentPath: frame.referencePath // Added missing property, using ref path as approximation
         });
       }
     });
