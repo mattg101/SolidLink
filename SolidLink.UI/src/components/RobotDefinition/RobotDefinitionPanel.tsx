@@ -115,6 +115,7 @@ type RobotDefinitionPanelProps = {
   definition: RobotDefinition;
   onDefinitionChange: (next: RobotDefinition) => void;
   onSave: () => void;
+  onClear: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -123,12 +124,14 @@ type RobotDefinitionPanelProps = {
   externalSelection?: SelectionState | null;
   refGeometry?: RefGeometryNode[];
   onNodeClick?: (nodeId: string) => boolean; // Return true to consume the click (prevent selection)
+  onActiveNodeChange?: (nodeId: string | null) => void;
 };
 
 export const RobotDefinitionPanel = ({
   definition,
   onDefinitionChange,
   onSave,
+  onClear,
   onUndo,
   onRedo,
   canUndo,
@@ -136,7 +139,8 @@ export const RobotDefinitionPanel = ({
   onSelectionChange,
   externalSelection,
   refGeometry = [],
-  onNodeClick
+  onNodeClick,
+  onActiveNodeChange
 }: RobotDefinitionPanelProps) => {
   const [selection, setSelection] = useState<SelectionState>({ nodeIds: [], jointIds: [] });
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
@@ -173,12 +177,22 @@ export const RobotDefinitionPanel = ({
   }, [selection, onSelectionChange]);
 
   useEffect(() => {
-    if (!selection.nodeIds.length && !selection.jointIds.length) return;
+    if (!selection.nodeIds.length && !selection.jointIds.length) {
+        onActiveNodeChange?.(null);
+        return;
+    }
     const activeNodeIds = selection.nodeIds.filter(id => nodeMap.has(id));
     const activeJointIds = selection.jointIds.filter(id => jointMap.has(id));
+    
+    if (activeNodeIds.length === 1) {
+        onActiveNodeChange?.(activeNodeIds[0]);
+    } else {
+        onActiveNodeChange?.(null);
+    }
+
     if (activeNodeIds.length === selection.nodeIds.length && activeJointIds.length === selection.jointIds.length) return;
     setSelection({ nodeIds: activeNodeIds, jointIds: activeJointIds });
-  }, [selection, nodeMap, jointMap]);
+  }, [selection, nodeMap, jointMap, onActiveNodeChange]);
 
   const screenToGraph = useCallback((clientX: number, clientY: number) => {
     if (!svgRef.current) return { x: 0, y: 0 };
@@ -440,6 +454,12 @@ export const RobotDefinitionPanel = ({
     updateDefinition({ ...definition, joints: nextJoints });
   };
 
+  const handleClearGeometry = () => {
+    if (!selection.nodeIds.length) return;
+    const activeId = selection.nodeIds[0];
+    updateNode(activeId, { geometryIds: [] });
+  };
+
   return (
     <div className="robot-def-panel">
       <div className="robot-def-header">
@@ -449,6 +469,7 @@ export const RobotDefinitionPanel = ({
         <div className="robot-def-actions">
           <button className="robot-def-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
           <button className="robot-def-button" onClick={onRedo} disabled={!canRedo}>Redo</button>
+          <button className="robot-def-button" onClick={onClear}>Clear</button>
           <button className="robot-def-button robot-def-primary" onClick={onSave}>Save</button>
           <button className="robot-def-button robot-def-ghost" onClick={handleFit}>Fit</button>
         </div>
@@ -645,16 +666,26 @@ export const RobotDefinitionPanel = ({
                           </button>
                         </div>
                       ))}
-                      <button
-                        className="robot-def-add-geometry"
-                        onClick={() => {
-                          const value = window.prompt('Add geometry id');
-                          if (!value) return;
-                          updateNode(activeNode.id, { geometryIds: [...activeNode.geometryIds, value] });
-                        }}
-                      >
-                        Add geometry
-                      </button>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          className="robot-def-add-geometry"
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            const value = window.prompt('Add geometry id');
+                            if (!value) return;
+                            updateNode(activeNode.id, { geometryIds: [...activeNode.geometryIds, value] });
+                          }}
+                        >
+                          Add geometry
+                        </button>
+                        <button
+                          className="robot-def-add-geometry"
+                          style={{ color: '#ff8a80', borderColor: '#ff8a80' }}
+                          onClick={handleClearGeometry}
+                        >
+                          Clear All
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>

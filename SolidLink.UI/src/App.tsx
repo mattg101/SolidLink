@@ -348,7 +348,9 @@ const RefTreeItem = ({
   if (isHidden && !showHidden) return null;
 
   const label = condensePath(node.path);
+  // Just rely on tree structure, maybe remove noisy type label too? keeping for now.
   const typeLabel = node.type === 'axis' ? 'AX' : 'CS';
+  
   const handleClick = () => {
     if (isHidden && showHidden) {
       onUnhide([node.id]);
@@ -404,11 +406,9 @@ const RefTreeItem = ({
         <span title={node.path} style={{ flex: 1 }}>
           {label}
         </span>
-        {showOrigin && (
-          <span style={{ fontSize: '0.65rem', color: '#f5c16c' }}>
-            origin
-          </span>
-        )}
+        {/* Only show 'origin' tag if it's NOT the result of 'Show All' logic (which sets everything to showOrigin) 
+            Actually, just removing the text tag per request. Visibility is implicit or controlled via context.
+        */}
         {isHidden && showHidden && (
           <span style={{ fontSize: '0.65rem', color: '#999' }}>
             hidden
@@ -462,7 +462,7 @@ function App() {
   const robotResizeRef = useRef<{ startY: number; startRatio: number } | null>(null);
 
 
-  const [refPickMode, setRefPickMode] = useState<string | null>(null);
+  const [activeRobotNodeId, setActiveRobotNodeId] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
     lastMessage: 'None',
@@ -470,7 +470,9 @@ function App() {
   })
 
   const handleRefPickStart = useCallback((id: string) => {
-    setRefPickMode(id);
+    // Reusing this state for 'Add to Node' logic or similar picking
+    // But now we have activeRobotNodeId for context menu logic
+    setRefPickMode(id); // If this was for Ref Frame assignment
     setRefContextMenu(null);
   }, []);
 
@@ -536,7 +538,12 @@ function App() {
   })
 
   useBridge<RobotDefinition>(MessageTypes.ROBOT_DEF_LOAD, (message) => {
-    if (!message.payload) return;
+    if (!message.payload || message.payload.nodes.length === 0) {
+        // Reset to default if empty
+        replaceRobotDefinition(createDefaultRobotDefinition());
+        log('Loaded empty robot definition, reset to default', 'warning');
+        return;
+    }
     replaceRobotDefinition(message.payload);
     log('Loaded robot definition from add-in', 'info');
   })
@@ -990,6 +997,19 @@ function App() {
     });
   }, [refGeometry]);
 
+  const handleAddToActiveNode = useCallback((geometryId: string) => {
+    if (!activeRobotNodeId) return;
+    const nextNodes = robotDefinition.nodes.map(node => {
+      if (node.id === activeRobotNodeId) {
+        // Prevent duplicates
+        if (node.geometryIds.includes(geometryId)) return node;
+        return { ...node, geometryIds: [...node.geometryIds, geometryId] };
+      }
+      return node;
+    });
+    commitRobotDefinition({ ...robotDefinition, nodes: nextNodes });
+  }, [activeRobotNodeId, robotDefinition, commitRobotDefinition]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!e.shiftKey || e.key.toLowerCase() !== 'h') return;
@@ -1359,6 +1379,8 @@ function App() {
               externalSelection={robotSelection}
               refGeometry={refGeometry}
               onNodeClick={refPickMode ? (nodeId) => { handleRefPickAssign(nodeId); return true; } : undefined}
+              onActiveNodeChange={setActiveRobotNodeId}
+              onClear={() => replaceRobotDefinition(createDefaultRobotDefinition())}
             />
           </div>
         </div>
@@ -1394,6 +1416,27 @@ function App() {
             zIndex: 40
           }}
         >
+          {activeRobotNodeId && (
+            <button
+              onClick={() => {
+                // Determine what was clicked.
+                // If it's a tree item, contextMenu.id (wait, we need to pass ID to context menu state)
+                // We stored selection state but context menu state is just {x,y}.
+                // We rely on 'selectedIds' being the target if we right clicked it.
+                // But context menu opens on right click.
+                // We should grab the ID that was right clicked.
+                // Let's assume the selection logic handles "Right click selects it first".
+                // So selectedIds[0] is the target.
+                if (selectedIds.length > 0) {
+                    handleAddToActiveNode(selectedIds[0]);
+                }
+                setContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Add to Active Node
+            </button>
+          )}
           {selectionHasVisible && (
             <button
               onClick={() => {
@@ -1428,17 +1471,30 @@ function App() {
             </button>
           )}
           {contextMenu && (
-            <button
-              onClick={() => {
-                // If we selected a node, we assume single selection for origin toggle for now
-                // or iterate all selectedIds
-                selectedIds.forEach(id => handleFrameOriginToggle(id));
-                setContextMenu(null);
-              }}
-              style={{ textAlign: 'left' }}
-            >
-              Toggle Origin
-            </button>
+            <>
+              {selectedIds.length === 1 && hiddenIdSet.has(selectedIds[0]) && (
+                <button
+                  onClick={() => {
+                    handleUnhide(selectedIds);
+                    setContextMenu(null);
+                  }}
+                  style={{ textAlign: 'left' }}
+                >
+                  Unhide Item
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  // If we selected a node, we assume single selection for origin toggle for now
+                  // or iterate all selectedIds
+                  selectedIds.forEach(id => handleFrameOriginToggle(id));
+                  setContextMenu(null);
+                }}
+                style={{ textAlign: 'left' }}
+              >
+                Toggle Origin
+              </button>
+            </>
           )}
         </div>
       )}
