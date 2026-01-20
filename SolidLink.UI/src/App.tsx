@@ -1382,7 +1382,14 @@ function App() {
               refGeometry={refGeometry}
               onNodeClick={refPickMode ? (nodeId) => { handleRefPickAssign(nodeId); return true; } : undefined}
               onActiveNodeChange={setActiveRobotNodeId}
-              onClear={() => replaceRobotDefinition(createDefaultRobotDefinition())}
+              onClear={() => {
+                const defaults = createDefaultRobotDefinition();
+                const baseOnly: RobotDefinition = {
+                    nodes: [defaults.nodes[0]], // Keep only base
+                    joints: []
+                };
+                replaceRobotDefinition(baseOnly);
+              }}
             />
           </div>
         </div>
