@@ -28,11 +28,7 @@ namespace SolidLink.Addin.Services
                 manager = extension.CustomPropertyManager[string.Empty];
                 string rawValue;
                 string resolvedValue;
-                int result = manager.Get4(PropertyName, false, out rawValue, out resolvedValue);
-                if (result == (int)swCustomInfoGetResult_e.swCustomInfoGetResult_NotPresent)
-                {
-                    return new List<string>();
-                }
+                manager.Get4(PropertyName, false, out rawValue, out resolvedValue);
 
                 var json = string.IsNullOrWhiteSpace(resolvedValue) ? rawValue : resolvedValue;
                 if (string.IsNullOrWhiteSpace(json))

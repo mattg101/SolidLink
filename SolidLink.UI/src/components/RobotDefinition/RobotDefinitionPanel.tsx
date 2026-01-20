@@ -125,6 +125,8 @@ type RobotDefinitionPanelProps = {
   refGeometry?: RefGeometryNode[];
   onNodeClick?: (nodeId: string) => boolean; // Return true to consume the click (prevent selection)
   onActiveNodeChange?: (nodeId: string | null) => void;
+  geometryMap?: Record<string, string>;
+  onViewportHighlight?: (ids: string[]) => void;
 };
 
 export const RobotDefinitionPanel = ({
@@ -140,7 +142,9 @@ export const RobotDefinitionPanel = ({
   externalSelection,
   refGeometry = [],
   onNodeClick,
-  onActiveNodeChange
+  onActiveNodeChange,
+  geometryMap = {},
+  onViewportHighlight
 }: RobotDefinitionPanelProps) => {
   const [selection, setSelection] = useState<SelectionState>({ nodeIds: [], jointIds: [] });
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
@@ -149,12 +153,27 @@ export const RobotDefinitionPanel = ({
   const [panState, setPanState] = useState<PanState | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [activeGeometryIds, setActiveGeometryIds] = useState<string[]>([]); // For highlighting
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const nodeMap = useMemo(() => buildNodeMap(definition), [definition]);
   const jointMap = useMemo(() => buildJointMap(definition), [definition]);
   const layout = useMemo(() => layoutTree(definition, collapsedIds), [definition, collapsedIds]);
+
+  useEffect(() => {
+    // If active geometry IDs change, highlight them in viewport
+    if (activeGeometryIds.length > 0) {
+        onViewportHighlight?.(activeGeometryIds);
+    } else {
+        // Only clear if we were highlighting geometry, not if user just selected something else
+        // Actually, viewport expects 'selection' for highlighting usually.
+        // We might want to use a separate prop for "highlight these items in viewport".
+        // For now, let's just trigger selection if user clicks "Show Node Geometry".
+        // But for hovering list items...
+        onViewportHighlight?.([]); 
+    }
+  }, [activeGeometryIds, onViewportHighlight]);
 
   useEffect(() => {
     if (!externalSelection) return;
@@ -434,6 +453,10 @@ export const RobotDefinitionPanel = ({
   const selectionCount = selection.nodeIds.length + selection.jointIds.length;
   const selectionBox = dragState ? buildSelectionBox(dragState) : null;
 
+  // Highlight geometry in viewport when hovering node or list item
+  // Not implemented in this component directly, relies on external selection sync
+  // but we can look up names.
+
   const handleBulkNodeType = (value: RobotNodeType) => {
     if (!selection.nodeIds.length) return;
     const nextNodes = definition.nodes.map(node => (
@@ -459,6 +482,21 @@ export const RobotDefinitionPanel = ({
     const activeId = selection.nodeIds[0];
     updateNode(activeId, { geometryIds: [] });
   };
+
+  const handleNameChange = (name: string) => {
+    if (!selection.nodeIds.length) return;
+    const activeId = selection.nodeIds[0];
+    updateNode(activeId, { name });
+  };
+
+  const geometryLookup = useMemo(() => {
+    // We don't have the full map of ID -> Name here easily without tree reference.
+    // Ideally pass geometryMap or similar. For now just displaying ID.
+    // If we want names, we need the geometry map from App.tsx or derived from tree.
+    // Let's assume we just show ID for now unless `refGeometry` or similar helps.
+    // Actually, `refGeometry` is for frames. `tree` has components.
+    return {};
+  }, []);
 
   return (
     <div className="robot-def-panel">
@@ -615,7 +653,15 @@ export const RobotDefinitionPanel = ({
           </div>
           {selectionCount > 0 && (
             <div className="robot-def-meta">
-              <div className="robot-def-meta-title">Metadata</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="robot-def-meta-title">Metadata</div>
+                <button 
+                  onClick={() => setSelection({ nodeIds: [], jointIds: [] })}
+                  style={{ background: 'transparent', border: 'none', color: '#9cb5c8', cursor: 'pointer', padding: '0 4px', fontSize: '1rem', lineHeight: '1' }}
+                >
+                  &times;
+                </button>
+              </div>
               {activeNode && (
                 <>
                   <div className="robot-def-field">
@@ -655,7 +701,9 @@ export const RobotDefinitionPanel = ({
                     <div className="robot-def-geometry">
                       {activeNode.geometryIds.map(id => (
                         <div key={id} className="robot-def-chip">
-                          <span>{id}</span>
+                          <span title={id} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {geometryMap[id] || id}
+                          </span>
                           <button
                             onClick={() => {
                               const next = activeNode.geometryIds.filter(entry => entry !== id);
@@ -669,18 +717,7 @@ export const RobotDefinitionPanel = ({
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button
                           className="robot-def-add-geometry"
-                          style={{ flex: 1 }}
-                          onClick={() => {
-                            const value = window.prompt('Add geometry id');
-                            if (!value) return;
-                            updateNode(activeNode.id, { geometryIds: [...activeNode.geometryIds, value] });
-                          }}
-                        >
-                          Add geometry
-                        </button>
-                        <button
-                          className="robot-def-add-geometry"
-                          style={{ color: '#ff8a80', borderColor: '#ff8a80' }}
+                          style={{ color: '#ff8a80', borderColor: '#ff8a80', width: '100%' }}
                           onClick={handleClearGeometry}
                         >
                           Clear All

@@ -461,13 +461,16 @@ function App() {
   const robotResizeRef = useRef<{ startY: number; startRatio: number } | null>(null);
 
 
-  const [refPickMode, setRefPickMode] = useState<string | null>(null);
-  const [activeRobotNodeId, setActiveRobotNodeId] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState({
-    wv2Present: false,
-    lastMessage: 'None',
-    renderTime: new Date().toLocaleTimeString()
-  })
+  const [geometryMap, setGeometryMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Build map from frameById
+    const map: Record<string, string> = {};
+    frameById.forEach((frame, id) => {
+        map[id] = frame.name;
+    });
+    setGeometryMap(map);
+  }, [frameById]);
 
   const handleRefPickStart = useCallback((id: string) => {
     // Reusing this state for 'Add to Node' logic or similar picking
@@ -1001,16 +1004,47 @@ function App() {
 
   const handleAddToActiveNode = useCallback((geometryId: string) => {
     if (!activeRobotNodeId) return;
+    
+    // Add descendants recursively if it's a component
+    const idsToAdd = new Set<string>();
+    const stack = [geometryId];
+    
+    // Check hidden state to skip hidden items
+    const isHidden = (id: string) => hiddenIds.includes(id);
+
+    // Also check if item is suppressed in SW (needs data from tree)
+    // We don't have 'suppressed' flag in Frame interface yet, assuming 'hidden' covers it or we rely on tree data.
+    // If 'suppressed' means not in tree, we are good.
+    // If it means in tree but marked, we need to check property.
+    // Let's rely on hiddenIds for now.
+    
+    while (stack.length > 0) {
+        const id = stack.pop();
+        if (!id) continue;
+        if (isHidden(id)) continue; // Skip hidden items
+        
+        // Add to set
+        idsToAdd.add(id);
+        const frame = frameById.get(id);
+        
+        // Only recurse if it's a Component or Folder (implied by having children)
+        // Check if suppressed? Frame doesn't have suppression state yet.
+        if (frame?.children) {
+            frame.children.forEach(child => stack.push(child.id));
+        }
+    }
+
     const nextNodes = robotDefinition.nodes.map(node => {
       if (node.id === activeRobotNodeId) {
         // Prevent duplicates
-        if (node.geometryIds.includes(geometryId)) return node;
-        return { ...node, geometryIds: [...node.geometryIds, geometryId] };
+        const currentIds = new Set(node.geometryIds);
+        idsToAdd.forEach(id => currentIds.add(id));
+        return { ...node, geometryIds: Array.from(currentIds) };
       }
       return node;
     });
     commitRobotDefinition({ ...robotDefinition, nodes: nextNodes });
-  }, [activeRobotNodeId, robotDefinition, commitRobotDefinition]);
+  }, [activeRobotNodeId, robotDefinition, commitRobotDefinition, frameById, hiddenIds]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1388,8 +1422,16 @@ function App() {
                     nodes: [defaults.nodes[0]], // Keep only base
                     joints: []
                 };
+                // Make sure to reset geometryIds for the base node to empty if that's desired
+                // Or keep default. Let's keep default for base.
+                // Request says "delete the robot def besides the base link".
+                // Usually implies base link geometry is kept or reset.
+                // Let's reset geometry too for a clean slate.
+                baseOnly.nodes[0].geometryIds = [];
+                baseOnly.nodes[0].children = []; // Clear base children
                 replaceRobotDefinition(baseOnly);
               }}
+              geometryMap={geometryMap}
             />
           </div>
         </div>
@@ -1492,10 +1534,21 @@ function App() {
                   Unhide Item
                 </button>
               )}
+              {activeRobotNodeId && (
+                <button
+                  onClick={() => {
+                    if (selectedIds.length > 0) {
+                        handleAddToActiveNode(selectedIds[0]);
+                    }
+                    setContextMenu(null);
+                  }}
+                  style={{ textAlign: 'left' }}
+                >
+                  Add to Active Node
+                </button>
+              )}
               <button
                 onClick={() => {
-                  // If we selected a node, we assume single selection for origin toggle for now
-                  // or iterate all selectedIds
                   selectedIds.forEach(id => handleFrameOriginToggle(id));
                   setContextMenu(null);
                 }}
