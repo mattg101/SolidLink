@@ -12,6 +12,8 @@ import {
   demoUndoRedo,
   demoRefGeometry,
   demoViewportInteraction,
+  demoPanelResizing,
+  demoOriginLinking,
 } from './showcase-demos';
 
 const fixture = JSON.parse(
@@ -82,6 +84,9 @@ test.describe('Showcase', () => {
     await setLabel(page, '✨ SolidLink Feature Showcase');
     await pause(page, 1500);
     
+    // Panel Resizing (Show off flexible layout first)
+    await demoPanelResizing(page);
+
     // Viewport Interaction (Show off the model)
     await demoViewportInteraction(page);
     
@@ -96,6 +101,9 @@ test.describe('Showcase', () => {
     
     // Ref Geometry
     await demoRefGeometry(page);
+
+    // Origin Linking (New Feature)
+    await demoOriginLinking(page);
     
     // Robot Definition
     await demoRobotDefinition(page);

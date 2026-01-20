@@ -32,7 +32,11 @@ export const demoRefGeometry = async (page: Page) => {
   await setLabel(page, '📐 Ref Geometry - Hide Plane');
   await planeTop.click({ button: 'right' });
   await pause(page, 300);
-  const hideBtn = page.locator('button', { hasText: 'Hide' }).first();
+  
+  // Scope to context menu (fixed position div) or use exact match
+  // The context menu is rendered in a portal or just fixed div at root
+  // We can match by text exact: true
+  const hideBtn = page.getByRole('button', { name: 'Hide', exact: true });
   if (await hideBtn.isVisible()) {
     await hideBtn.click();
   }
