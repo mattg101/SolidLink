@@ -83,3 +83,64 @@ cd SolidLink
 | `SolidLink.Tests/Mocks/*.cs` | Mock implementations |
 | `SolidLink.Tests/Unit/*.cs` | Unit tests (no SW) |
 | `SolidLink.Tests/Integration/*.cs` | Integration tests (`[Category("RequiresSW")]`) |
+
+## 6. UI Visual & Behavior Specification
+
+The User Interface is designed for high-density information display with a "Premium" aesthetic (dark mode, glassmorphism) and robust layout flexibility.
+
+### 6.1 Layout System
+- **Adjustable Panels:** All major workspace areas are resizable via drag handles with enforced minimum dimensions to prevent layout collapse.
+  - **Sidebar:** Width adjustable (220px - 800px).
+  - **Tree Split:** Vertical split between CAD Tree and Ref Geometry Tree (min 160px each).
+  - **Main Split:** Vertical split between 3D Viewport and Robot Definition (min 100px each).
+- **Responsive Handling:** Flexbox-based layout ensures components reflow gracefully on small screens (tested down to 800x600).
+
+### 6.2 Visual Style
+- **Typography:** Uses modern sans-serif fonts (e.g., 'Outfit', 'Space Mono') with consistent capitalization (Sentence case, no All-Caps).
+- **Theme:** Deep dark mode (`#0d1523`) with radial gradients and semi-transparent overlays (glassmorphism).
+- **Interactive Elements:**
+  - **Buttons:** Pill-shaped, compact, with hover states.
+  - **Overlays:** Metadata panels float over content with `backdrop-filter: blur()`.
+  - **Accents:** Use of specific colors for context (Primary Green `#2bc67f`, Selection Blue `#3A86FF`, Sensor Pink `#FF006E`).
+
+### 6.3 Functional Components
+
+#### A. CAD Tree
+- **Navigation:** Expand/collapse hierarchy, click to select.
+- **Filtering:** Real-time text filter that hides non-matching nodes.
+- **Visibility:**
+  - **Hide/Show:** Toggle visibility with `Shift+H` or context menu.
+  - **Show Hidden:** Global toggle to visualize hidden items as ghosted.
+  - **Context Menu:** "Unhide Item", "Toggle Origin".
+- **Origin Linking:** Toggling an origin on a CAD component dynamically adds a synthetic "Origin of [Name]" node to the Reference Geometry tree.
+
+#### B. Reference Geometry Tree
+- **Listing:** Displays standard reference geometry (Planes, Axes) plus synthetic linked origins.
+- **Interaction:** Click to highlight in viewport, right-click to hide/show or toggle visual aids.
+- **Global Control:** "Hide Origins" checkbox to toggle all triad visualizations in the viewport.
+
+#### C. 3D Viewport
+- **Rendering:** Three.js based renderer handling mesh geometry from SolidWorks.
+- **Interaction:**
+  - **Orbit/Pan/Zoom:** Standard mouse controls.
+  - **Selection:** Bi-directional sync; clicking a mesh selects it in the tree and vice-versa.
+  - **Hover:** Pixel-perfect hover highlighting using readback buffer.
+
+#### D. Robot Definition Panel
+- **Graph Editor:** visual node-link diagram of the robot structure.
+  - **Nodes:** Represent Links/Bodies/Sensors. Draggable, selectable.
+  - **Joints:** Bézier curves representing connections. Click to select.
+- **Editing:**
+  - **Add Child:** Hover node to see `+` action.
+  - **Remove:** Hover node to see `x` action.
+  - **Clear:** Header button to reset definition to default base.
+  - **Undo/Redo:** Full history stack for structural and property changes.
+- **Metadata Overlay:**
+  - **Floating Panel:** Appears only on selection, floating top-right.
+  - **Properties:** Edit Name, Type (Body/Sensor/Frame), Origin Frame.
+  - **Geometry Assignment:** "Add to Active Node" via context menu from CAD tree selection.
+- **Space Optimization:** Header consolidated (Fit button in canvas), compact headers to maximize graph area.
+
+### 6.4 Automation & Showcase
+- **E2E Video:** `npm run test:showcase` generates a comprehensive `showcase.webm` artifact demonstrating all features.
+- **Test Label:** Dev-only overlay (`window.__setTestLabel__`) displays the current test step in the recorded video.
