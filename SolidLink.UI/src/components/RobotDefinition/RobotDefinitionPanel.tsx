@@ -502,7 +502,7 @@ export const RobotDefinitionPanel = ({
     <div className="robot-def-panel">
       <div className="robot-def-header">
         <div className="robot-def-header-left">
-          <div className="robot-def-title">Robot Def</div>
+          <div className="robot-def-title">Robot Definition</div>
         </div>
         <div className="robot-def-actions">
           <button className="robot-def-button" onClick={onUndo} disabled={!canUndo}>Undo</button>

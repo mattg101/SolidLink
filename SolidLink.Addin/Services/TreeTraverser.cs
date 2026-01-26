@@ -73,7 +73,7 @@ namespace SolidLink.Addin.Services
 
         private GRM.Frame TraverseComponent(IComponent comp)
         {
-            if (comp == null) return null;
+            if (comp == null || comp.IsSuppressed) return null;
 
             string parentName = comp.Parent != null ? comp.Parent.Name : "(ROOT)";
             DiagnosticLogger.LogComponent(comp.Name, parentName, comp.TransformMatrix);
@@ -109,6 +109,10 @@ namespace SolidLink.Addin.Services
 
             foreach (var child in comp.Children)
             {
+                if (child == null || child.IsSuppressed)
+                {
+                    continue;
+                }
                 var childFrame = TraverseComponent(child);
                 if (childFrame != null)
                 {
@@ -143,7 +147,7 @@ namespace SolidLink.Addin.Services
 
         private void TraverseReferenceGeometry(IComponent comp, List<GRM.RefGeometryNode> nodes, string parentPath)
         {
-            if (comp == null)
+            if (comp == null || comp.IsSuppressed)
             {
                 return;
             }

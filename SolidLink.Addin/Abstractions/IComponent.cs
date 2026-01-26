@@ -8,6 +8,7 @@ namespace SolidLink.Addin.Abstractions
         IComponent Parent { get; }
         IEnumerable<IComponent> Children { get; }
         IModelDocument ModelDoc { get; }
+        bool IsSuppressed { get; }
         double[] TransformMatrix { get; }
         IEnumerable<IBody> Bodies { get; }
         double[] MaterialColor { get; }

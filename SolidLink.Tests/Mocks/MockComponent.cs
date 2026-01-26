@@ -41,6 +41,8 @@ namespace SolidLink.Tests.Mocks
 
         public IModelDocument ModelDoc => null; // For components, this would reference the sub-assembly/part
 
+        public bool IsSuppressed => false;
+
         public double[] TransformMatrix => _fixture.Transform ?? new double[] { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1 };
 
         public IEnumerable<IBody> Bodies

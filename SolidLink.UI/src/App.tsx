@@ -129,32 +129,30 @@ const buildTreeVisibility = (root: Frame | null, query: string, hiddenIds: Set<s
   const matched = new Set<string>();
 
   if (!root) return { treeVisibleIds: visible, matchedIds: matched };
-  const allowHidden = showHidden;
   const isHidden = (frame: Frame) => hiddenIds.has(frame.id);
-  if (!query) {
-    const collect = (frame: Frame) => {
-      if (isHidden(frame) && !allowHidden) {
-        return;
-      }
-      visible.add(frame.id);
-      frame.children.forEach(collect);
-    };
-    collect(root);
-    return { treeVisibleIds: visible, matchedIds: matched };
-  }
+  const showHiddenOnly = showHidden;
 
   const walk = (frame: Frame) => {
-    if (isHidden(frame) && !allowHidden) {
-      return false;
-    }
-    let descendantMatch = false;
+    const hiddenSelf = isHidden(frame);
+    let descendantVisible = false;
     frame.children.forEach(child => {
-      if (walk(child)) descendantMatch = true;
+      if (walk(child)) descendantVisible = true;
     });
-    const selfMatch = matchesFilter(frame, query);
-    if (selfMatch) matched.add(frame.id);
-    if (selfMatch || descendantMatch) visible.add(frame.id);
-    return selfMatch || descendantMatch;
+
+    const selfMatch = query ? matchesFilter(frame, query) : true;
+    if (query && selfMatch) {
+      matched.add(frame.id);
+    }
+
+    const selfVisible = showHiddenOnly
+      ? (hiddenSelf && selfMatch)
+      : (!hiddenSelf && selfMatch);
+
+    const isVisible = selfVisible || descendantVisible;
+    if (isVisible) {
+      visible.add(frame.id);
+    }
+    return isVisible;
   };
 
   walk(root);
@@ -251,11 +249,13 @@ const TreeItem = ({
         data-hovered={isHovered ? 'true' : 'false'}
         data-hidden={isHidden ? 'true' : 'false'}
         onClick={(e) => {
-          if (hasChildren) setIsOpenState(prev => !prev);
-          if (isHidden && showHidden) {
-            onUnhide([frame.id]);
-          }
           handleSelect(e);
+        }}
+        onDoubleClick={(e) => {
+          if (hasChildren) {
+            setIsOpenState(prev => !prev);
+          }
+          e.stopPropagation();
         }}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -287,7 +287,19 @@ const TreeItem = ({
           opacity: isHidden ? 0.55 : 1
         }}
       >
-        <span style={{ fontSize: '10px', width: '12px' }}>
+        <span
+          onClick={(e) => {
+            if (hasChildren) {
+              setIsOpenState(prev => !prev);
+            }
+            e.stopPropagation();
+          }}
+          style={{
+            fontSize: '10px',
+            width: '12px',
+            cursor: hasChildren ? 'pointer' : 'default'
+          }}
+        >
           {hasChildren ? (isOpen ? '▼' : '▶') : '•'}
         </span>
         <span style={{
@@ -441,7 +453,7 @@ function App() {
   const [showHidden, setShowHidden] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id?: string } | null>(null);
   const [refContextMenu, setRefContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
   const [refPickMode, setRefPickMode] = useState<string | null>(null);
   const [activeRobotNodeId, setActiveRobotNodeId] = useState<string | null>(null);
@@ -460,7 +472,7 @@ function App() {
   const { selectedIds, setSelection, clearSelection } = useSelection();
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [treeSplitRatio, setTreeSplitRatio] = useState(0.6);
-  const [robotSplitRatio, setRobotSplitRatio] = useState(0.68);
+  const [robotSplitRatio, setRobotSplitRatio] = useState(0.6);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const sidebarResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
@@ -835,6 +847,7 @@ function App() {
 
   useEffect(() => {
     if (selectedIds.length === 0) return;
+    if (showHidden) return;
     const visibleSelected = selectedIds.filter(id => !hiddenIdSet.has(id));
     if (visibleSelected.length === selectedIds.length) return;
     if (visibleSelected.length === 0) {
@@ -842,7 +855,7 @@ function App() {
       return;
     }
     setSelection(visibleSelected, visibleSelected[0]);
-  }, [hiddenIdSet, selectedIds, clearSelection, setSelection]);
+  }, [hiddenIdSet, selectedIds, clearSelection, setSelection, showHidden]);
 
   const { treeVisibleIds, matchedIds } = useMemo(() => {
     return buildTreeVisibility(tree?.rootFrame ?? null, normalizeQuery(filter), hiddenIdSet, showHidden);
@@ -1085,11 +1098,11 @@ function App() {
       if (!selectedIds.includes(frameId)) {
         setSelection([frameId], frameId);
       }
-      setContextMenu({ x: point.x, y: point.y });
+      setContextMenu({ x: point.x, y: point.y, id: frameId });
       return;
     }
     if (selectedIds.length === 0) return;
-    setContextMenu({ x: point.x, y: point.y });
+    setContextMenu({ x: point.x, y: point.y, id: selectedIds[0] });
   }, [selectedIds, setSelection]);
 
   const openRefContextMenuAt = useCallback((point: { x: number; y: number }, id: string) => {
@@ -1118,6 +1131,9 @@ function App() {
   const selectionHasHidden = selectedIds.some(id => hiddenIdSet.has(id));
   const selectionHasVisible = selectedIds.some(id => !hiddenIdSet.has(id));
   const refMenuOriginVisible = refContextMenu ? !!refOriginVisibility[refContextMenu.id] : false;
+  const contextTargetId = contextMenu?.id ?? (selectedIds.length > 0 ? selectedIds[0] : undefined);
+  const contextTargetHidden = contextTargetId ? hiddenIdSet.has(contextTargetId) : false;
+  const contextTargetVisible = contextTargetId ? !hiddenIdSet.has(contextTargetId) : false;
   const refMenuHidden = refContextMenu ? hiddenIdSet.has(refContextMenu.id) : false;
 
   return (
@@ -1473,20 +1489,11 @@ function App() {
             zIndex: 40
           }}
         >
-          {activeRobotNodeId && (
+          {activeRobotNodeId && (selectedIds.length > 0 || contextTargetId) && (
             <button
               onClick={() => {
-                // Determine what was clicked.
-                // If it's a tree item, contextMenu.id (wait, we need to pass ID to context menu state)
-                // We stored selection state but context menu state is just {x,y}.
-                // We rely on 'selectedIds' being the target if we right clicked it.
-                // But context menu opens on right click.
-                // We should grab the ID that was right clicked.
-                // Let's assume the selection logic handles "Right click selects it first".
-                // So selectedIds[0] is the target.
-                if (selectedIds.length > 0) {
-                    handleAddToActiveNode(selectedIds[0]);
-                }
+                const targetIds = selectedIds.length > 0 ? selectedIds : (contextTargetId ? [contextTargetId] : []);
+                targetIds.forEach(id => handleAddToActiveNode(id));
                 setContextMenu(null);
               }}
               style={{ textAlign: 'left' }}
@@ -1494,10 +1501,11 @@ function App() {
               Add to Active Node
             </button>
           )}
-          {selectionHasVisible && (
+          {(selectedIds.length > 0 || contextTargetId) && (selectionHasVisible || contextTargetVisible) && (
             <button
               onClick={() => {
-                handleHide(selectedIds);
+                const targetIds = selectedIds.length > 0 ? selectedIds : (contextTargetId ? [contextTargetId] : []);
+                handleHide(targetIds);
                 setContextMenu(null);
               }}
               style={{ textAlign: 'left' }}
@@ -1505,15 +1513,16 @@ function App() {
               Hide (Shift+H)
             </button>
           )}
-          {showHidden && selectionHasHidden && (
+          {showHidden && (selectedIds.length > 0 || contextTargetId) && (selectionHasHidden || contextTargetHidden) && (
             <button
               onClick={() => {
-                handleUnhide(selectedIds);
+                const targetIds = selectedIds.length > 0 ? selectedIds : (contextTargetId ? [contextTargetId] : []);
+                handleUnhide(targetIds);
                 setContextMenu(null);
               }}
               style={{ textAlign: 'left' }}
             >
-              Unhide
+              Unhide Item
             </button>
           )}
           {hiddenIdSet.size > 0 && (
@@ -1527,42 +1536,17 @@ function App() {
               Unhide All
             </button>
           )}
-          {contextMenu && (
-            <>
-              {selectedIds.length === 1 && hiddenIdSet.has(selectedIds[0]) && (
-                <button
-                  onClick={() => {
-                    handleUnhide(selectedIds);
-                    setContextMenu(null);
-                  }}
-                  style={{ textAlign: 'left' }}
-                >
-                  Unhide Item
-                </button>
-              )}
-              {activeRobotNodeId && (
-                <button
-                  onClick={() => {
-                    if (selectedIds.length > 0) {
-                        handleAddToActiveNode(selectedIds[0]);
-                    }
-                    setContextMenu(null);
-                  }}
-                  style={{ textAlign: 'left' }}
-                >
-                  Add to Active Node
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  selectedIds.forEach(id => handleFrameOriginToggle(id));
-                  setContextMenu(null);
-                }}
-                style={{ textAlign: 'left' }}
-              >
-                Toggle Origin
-              </button>
-            </>
+          {(selectedIds.length > 0 || contextTargetId) && (
+            <button
+              onClick={() => {
+                const targetIds = selectedIds.length > 0 ? selectedIds : (contextTargetId ? [contextTargetId] : []);
+                targetIds.forEach(id => handleFrameOriginToggle(id));
+                setContextMenu(null);
+              }}
+              style={{ textAlign: 'left' }}
+            >
+              Toggle Origin
+            </button>
           )}
         </div>
       )}

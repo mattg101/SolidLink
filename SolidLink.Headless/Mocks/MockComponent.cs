@@ -39,6 +39,8 @@ namespace SolidLink.Headless.Mocks
 
         public IModelDocument ModelDoc => null;
 
+        public bool IsSuppressed => false;
+
         public double[] TransformMatrix => _fixture.Transform ?? new double[]
         {
             1, 0, 0, 0,

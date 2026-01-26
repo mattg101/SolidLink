@@ -172,11 +172,10 @@ namespace SolidLink.Tests.Unit
             var traverser = new TreeTraverser(context);
 
             // Act
-            var model = traverser.ExtractModel(context.ActiveModel);
+            var refs = traverser.ExtractReferenceGeometry(context.ActiveModel);
 
             // Assert
-            var root = model.RootFrame;
-            Assert.That(root.Children.Any(c => c.Type == "COORDSYS"), Is.True);
+            Assert.That(refs.Any(r => r.Type == "csys"), Is.True);
         }
     }
 }

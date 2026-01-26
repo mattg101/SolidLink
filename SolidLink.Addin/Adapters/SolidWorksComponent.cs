@@ -45,8 +45,8 @@ namespace SolidLink.Addin.Adapters
 
                 _children = ComHelpers.SafeCall(() =>
                 {
-                    var children = _component?.GetChildren() as object[];
-                    return children?.Select(c => (Abstractions.IComponent)new SolidWorksComponent((Component2)c, this)).ToList()
+                    var children = GetOrderedChildren();
+                    return children.Select(c => (Abstractions.IComponent)new SolidWorksComponent(c, this)).ToList()
                         ?? new List<Abstractions.IComponent>();
                 }, new List<Abstractions.IComponent>());
                 return _children;
@@ -71,6 +71,17 @@ namespace SolidLink.Addin.Adapters
             }
         }
 
+        public bool IsSuppressed
+        {
+            get
+            {
+                return ComHelpers.SafeCall(() =>
+                {
+                    return _component != null && _component.IsSuppressed();
+                }, false);
+            }
+        }
+
         public double[] TransformMatrix
         {
             get
@@ -90,6 +101,83 @@ namespace SolidLink.Addin.Adapters
                     }
                 }, CreateIdentityTransform());
             }
+        }
+
+        private IEnumerable<Component2> GetOrderedChildren()
+        {
+            var directChildren = _component?.GetChildren() as object[];
+            var directList = directChildren?.OfType<Component2>().ToList() ?? new List<Component2>();
+            if (directList.Count <= 1)
+            {
+                return directList;
+            }
+
+            var orderIndex = GetAssemblyOrderIndex();
+            if (orderIndex.Count == 0)
+            {
+                return directList;
+            }
+
+            return directList
+                .OrderBy(child =>
+                {
+                    var key = GetComponentOrderKey(child);
+                    return orderIndex.TryGetValue(key, out var index) ? index : int.MaxValue;
+                })
+                .ToList();
+        }
+
+        private Dictionary<string, int> GetAssemblyOrderIndex()
+        {
+            var orderIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            ModelDoc2 modelDoc = null;
+            try
+            {
+                modelDoc = _component?.GetModelDoc2() as ModelDoc2;
+                if (modelDoc == null || modelDoc.GetType() != (int)swDocumentTypes_e.swDocASSEMBLY)
+                {
+                    return orderIndex;
+                }
+
+                var assembly = modelDoc as AssemblyDoc;
+                var ordered = assembly?.GetComponents(true) as object[];
+                if (ordered == null || ordered.Length == 0)
+                {
+                    return orderIndex;
+                }
+
+                var index = 0;
+                foreach (var comp in ordered.OfType<Component2>())
+                {
+                    var key = GetComponentOrderKey(comp);
+                    if (!string.IsNullOrWhiteSpace(key) && !orderIndex.ContainsKey(key))
+                    {
+                        orderIndex[key] = index;
+                    }
+                    index++;
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                ComHelpers.ReleaseComObject(modelDoc);
+            }
+
+            return orderIndex;
+        }
+
+        private string GetComponentOrderKey(Component2 component)
+        {
+            if (component == null)
+            {
+                return string.Empty;
+            }
+
+            var name = ComHelpers.SafeCall(() => component.Name2 ?? string.Empty, string.Empty);
+            var path = ComHelpers.SafeCall(() => component.GetPathName() ?? string.Empty, string.Empty);
+            return $"{name}|{path}";
         }
 
         public IEnumerable<Abstractions.IBody> Bodies

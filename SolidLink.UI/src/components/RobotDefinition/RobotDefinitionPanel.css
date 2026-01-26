@@ -140,9 +140,9 @@
 .robot-def-meta {
   position: absolute;
   right: 1rem;
-  top: 3.5rem;
+  top: 0.35rem;
   width: 220px;
-  max-height: calc(100% - 4.5rem);
+  max-height: calc(100% - 0.7rem);
   padding: 0.65rem 0.65rem 1rem;
   background: rgba(10, 16, 26, 0.85);
   backdrop-filter: blur(8px);
