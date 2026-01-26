@@ -443,6 +443,13 @@ function App() {
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [refContextMenu, setRefContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
+  const [refPickMode, setRefPickMode] = useState<string | null>(null);
+  const [activeRobotNodeId, setActiveRobotNodeId] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState({
+    wv2Present: false,
+    lastMessage: 'none',
+    renderTime: '',
+  });
   const [refOriginVisibility, setRefOriginVisibility] = useState<Record<string, boolean>>({});
   const [hideOriginsGlobal, setHideOriginsGlobal] = useState(true);
   const [frameOriginVisibility, setFrameOriginVisibility] = useState<Record<string, boolean>>({}); // For CAD tree origins
@@ -462,6 +469,16 @@ function App() {
 
 
   const [geometryMap, setGeometryMap] = useState<Record<string, string>>({});
+  const frameById = useMemo(() => {
+    const map = new Map<string, Frame>();
+    if (!tree?.rootFrame) return map;
+    const walk = (frame: Frame) => {
+      map.set(frame.id, frame);
+      frame.children?.forEach(walk);
+    };
+    walk(tree.rootFrame);
+    return map;
+  }, [tree]);
 
   useEffect(() => {
     // Build map from frameById
@@ -800,17 +817,6 @@ function App() {
       return { past, present: next, future };
     });
   }, []);
-
-  const frameById = useMemo(() => {
-    const map = new Map<string, Frame>();
-    if (!tree?.rootFrame) return map;
-    const walk = (frame: Frame) => {
-      map.set(frame.id, frame);
-      frame.children?.forEach(walk);
-    };
-    walk(tree.rootFrame);
-    return map;
-  }, [tree]);
 
   const orderedIds = useMemo(() => {
     if (!tree?.rootFrame) return [];

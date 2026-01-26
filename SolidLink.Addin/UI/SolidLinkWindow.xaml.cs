@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
@@ -18,6 +21,8 @@ namespace SolidLink.Addin.UI
         private readonly TreeTraverser traverser;
         private readonly ISolidWorksContext context;
         private readonly HiddenStateService hiddenStateService;
+        private static readonly int[] DevPorts = new[] { 5173, 5174, 5175, 5176, 5177, 5178 };
+        private static readonly TimeSpan DevProbeTimeout = TimeSpan.FromMilliseconds(300);
 
         public SolidLinkWindow(SldWorks app)
         {
@@ -55,11 +60,48 @@ namespace SolidLink.Addin.UI
                         bridge.SendConnectionStatus();
                     }
                 };
-                webView.Source = new Uri("http://localhost:5173");
+                var uiUrl = await ResolveUiUrlAsync();
+                System.Diagnostics.Debug.WriteLine($"[SolidLink] UI URL: {uiUrl}");
+                webView.Source = new Uri(uiUrl);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Failed to initialize WebView2: " + ex.Message);
+            }
+        }
+
+        private static async Task<string> ResolveUiUrlAsync()
+        {
+            var overrideUrl = System.Environment.GetEnvironmentVariable("SOLIDLINK_UI_URL");
+            if (!string.IsNullOrWhiteSpace(overrideUrl))
+            {
+                return overrideUrl;
+            }
+
+            foreach (var port in DevPorts)
+            {
+                var url = $"http://localhost:{port}/";
+                if (await CanReachAsync(url))
+                {
+                    return url;
+                }
+            }
+
+            return "http://localhost:5173";
+        }
+
+        private static async Task<bool> CanReachAsync(string url)
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(DevProbeTimeout);
+                using var client = new HttpClient { Timeout = DevProbeTimeout };
+                using var response = await client.GetAsync(url, cts.Token);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
             }
         }
 
