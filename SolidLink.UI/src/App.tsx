@@ -451,6 +451,8 @@ function App() {
     const [robotDefHistory, setRobotDefHistory] = useState<RobotDefinitionHistoryEntry[]>([])
     const [robotDefLinkedPath, setRobotDefLinkedPath] = useState<string | null>(null)
     const [robotDefModelPath, setRobotDefModelPath] = useState<string | null>(null)
+    const [robotDefLinkedMissing, setRobotDefLinkedMissing] = useState(false)
+    const [showLinkedPrompt, setShowLinkedPrompt] = useState(false)
     const [showSaveVersion, setShowSaveVersion] = useState(false)
     const [showHistory, setShowHistory] = useState(false)
     const [versionMessage, setVersionMessage] = useState('')
@@ -596,7 +598,12 @@ function App() {
       setRobotDefHistory(payload?.history ?? []);
       setRobotDefLinkedPath(payload?.linkedPath ?? null);
       setRobotDefModelPath(payload?.modelPath ?? null);
+      setRobotDefLinkedMissing(Boolean(payload?.linkedMissing));
     })
+
+    useEffect(() => {
+      setShowLinkedPrompt(robotDefLinkedMissing);
+    }, [robotDefLinkedMissing]);
 
   useBridge<RefGeometryListPayload>(MessageTypes.REF_GEOMETRY_LIST, (message) => {
     const nodes = message.payload ?? [];
@@ -892,6 +899,12 @@ function App() {
       const payload: RobotDefinitionLoadVersionPayload = { id };
       bridgeClient.send(MessageTypes.ROBOT_DEF_LOAD_VERSION, payload);
       setShowHistory(false);
+    }, []);
+
+    const handleCreateLinked = useCallback(() => {
+      bridgeClient.send(MessageTypes.ROBOT_DEF_LINK_DEFAULT);
+      setShowLinkedPrompt(false);
+      bridgeClient.send(MessageTypes.ROBOT_DEF_HISTORY_REQUEST);
     }, []);
 
   const orderedIds = useMemo(() => {
@@ -1806,7 +1819,9 @@ function App() {
                 {[...robotDefHistory].reverse().map(entry => (
                   <div key={entry.id} style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '10px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{entry.message || '(No message)'}</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                        {entry.versionNumber ? `v${entry.versionNumber} • ` : ''}{entry.message || '(No message)'}
+                      </div>
                       <div style={{ fontSize: '0.75rem', color: '#8aa4b8' }}>{new Date(entry.timestampUtc).toLocaleString()}</div>
                     </div>
                     <button onClick={() => handleLoadVersion(entry.id)}>Load</button>
@@ -1814,6 +1829,34 @@ function App() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showLinkedPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 60
+          }}
+        >
+          <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '12px', padding: '18px', minWidth: '360px', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.95rem' }}>Linked File Missing</strong>
+              <button onClick={() => setShowLinkedPrompt(false)}>Close</button>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#9cb5c8', marginBottom: '12px' }}>
+              The linked robot definition file could not be found. Create a new linked file alongside the SolidWorks model?
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button onClick={() => setShowLinkedPrompt(false)}>Not now</button>
+              <button className="robot-def-button robot-def-primary" onClick={handleCreateLinked}>Create New</button>
+            </div>
           </div>
         </div>
       )}

@@ -66,9 +66,16 @@ namespace SolidLink.Addin.Services
             var record = LoadAssociated(model) ?? new RobotDefinitionRecord();
             record.Definition = definition;
 
+            var nextIndex = 1;
+            if (record.History.Count > 0)
+            {
+                nextIndex = record.History.Max(v => v.VersionIndex) + 1;
+            }
+
             record.History.Add(new RobotDefinitionVersion
             {
                 Id = Guid.NewGuid().ToString("N"),
+                VersionIndex = nextIndex,
                 Message = message ?? string.Empty,
                 TimestampUtc = DateTime.UtcNow.ToString("o"),
                 Definition = definition.DeepClone()
@@ -121,10 +128,21 @@ namespace SolidLink.Addin.Services
                 .Select(v => new RobotDefinitionHistoryEntry
                 {
                     Id = v.Id,
+                    VersionIndex = v.VersionIndex,
                     Message = v.Message,
                     TimestampUtc = v.TimestampUtc
                 })
                 .ToList();
+        }
+
+        public RobotDefinitionRecord LinkToDefaultSidecar(ModelDoc2 model)
+        {
+            if (model == null) return null;
+            var record = LoadAssociated(model);
+            if (record?.Definition == null) return null;
+            var sidecarPath = GetSidecarPath(model.GetPathName());
+            if (string.IsNullOrWhiteSpace(sidecarPath)) return null;
+            return SaveRecord(model, record, sidecarPath);
         }
 
         private void SaveToSidecar(ModelDoc2 model, RobotDefinitionRecord record)
@@ -284,6 +302,9 @@ namespace SolidLink.Addin.Services
         [JsonProperty("id")]
         public string Id { get; set; }
 
+        [JsonProperty("versionNumber")]
+        public int VersionIndex { get; set; }
+
         [JsonProperty("message")]
         public string Message { get; set; }
 
@@ -298,6 +319,9 @@ namespace SolidLink.Addin.Services
     {
         [JsonProperty("id")]
         public string Id { get; set; }
+
+        [JsonProperty("versionNumber")]
+        public int VersionIndex { get; set; }
 
         [JsonProperty("message")]
         public string Message { get; set; }

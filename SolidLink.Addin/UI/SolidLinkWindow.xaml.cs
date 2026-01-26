@@ -188,6 +188,10 @@ namespace SolidLink.Addin.UI
             {
                 HandleRobotDefinitionHistoryRequest();
             }
+            else if (message.Type == "ROBOT_DEF_LINK_DEFAULT")
+            {
+                HandleRobotDefinitionLinkDefault();
+            }
             else if (message.Type == "SELECT_FRAME")
             {
                 SelectFrame(message.Payload);
@@ -356,6 +360,23 @@ namespace SolidLink.Addin.UI
             SendRobotDefinitionHistory(model, null);
         }
 
+        private void HandleRobotDefinitionLinkDefault()
+        {
+            var model = GetActiveModel();
+            if (model == null)
+            {
+                return;
+            }
+
+            var record = robotDefinitionStorage.LinkToDefaultSidecar(model);
+            if (record == null)
+            {
+                SendError("Failed to create a linked definition file.");
+                return;
+            }
+            SendRobotDefinitionHistory(model, record);
+        }
+
         private void SendError(string message)
         {
             if (string.IsNullOrWhiteSpace(message)) return;
@@ -366,7 +387,7 @@ namespace SolidLink.Addin.UI
         {
             if (model == null)
             {
-                bridge.Send("ROBOT_DEF_HISTORY", new { history = new List<object>() });
+                bridge.Send("ROBOT_DEF_HISTORY", new { history = new List<object>(), linkedMissing = false });
                 return;
             }
 
@@ -375,16 +396,21 @@ namespace SolidLink.Addin.UI
                 .Select(version => (object)new
                 {
                     id = version.Id,
+                    versionNumber = version.VersionIndex,
                     message = version.Message,
                     timestampUtc = version.TimestampUtc
                 })
                 .ToList() ?? new List<object>();
 
+            var linkedMissing = !string.IsNullOrWhiteSpace(record?.LinkedDefinitionPath)
+                && !System.IO.File.Exists(record.LinkedDefinitionPath);
+
             bridge.Send("ROBOT_DEF_HISTORY", new
             {
                 history,
                 linkedPath = record?.LinkedDefinitionPath,
-                modelPath = record?.ModelPath ?? model.GetPathName()
+                modelPath = record?.ModelPath ?? model.GetPathName(),
+                linkedMissing
             });
         }
 

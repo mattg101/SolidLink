@@ -45,6 +45,8 @@ SolidLink previously stored robot definition state only in the UI. Users require
 | FR-5 | **History UI** lists version entries and allows loading any previous version. | P0 | Version rollback. | Selecting a version loads the snapshot. |
 | FR-6 | **Embedded storage** stores the definition + history inside the SolidWorks model via Attribute feature. | P1 | Portability. | Attribute data contains JSON record. |
 | FR-7 | **Tree order** matches SolidWorks feature tree order, including nested folders. | P1 | Visual parity. | Tree order matches SW in test assembly. |
+| FR-8 | **Version numbers** are assigned to each saved version (v1, v2, …) and displayed in History. | P1 | Clarity and auditability. | History list shows version numbers. |
+| FR-9 | **Missing linked file prompt** asks the user to create a new linked file when the linked path is missing. | P1 | Recover from missing files. | Prompt appears and “Create New” links a new sidecar. |
 
 ## 6. Non-Functional Requirements
 | ID | Requirement | Priority | Rationale | Verification |
@@ -71,6 +73,7 @@ SolidLink previously stored robot definition state only in the UI. Users require
   "history": [
     {
       "id": "<guid>",
+      "versionNumber": 1,
       "message": "Initial version",
       "timestampUtc": "2026-01-26T02:30:00Z",
       "definition": { "nodes": [], "joints": [] }
@@ -86,6 +89,7 @@ SolidLink previously stored robot definition state only in the UI. Users require
 | date | string | Last update timestamp |
 | version | double | Attribute schema version |
 | linkedPath | string | Linked sidecar path |
+| linkedMissing | bool | Linked file missing indicator (UI prompt) |
 
 ## 9. APIs / Interfaces
 ### Bridge Messages (UI → Add-in)
@@ -103,12 +107,14 @@ SolidLink previously stored robot definition state only in the UI. Users require
 |------|---------|------|
 | ROBOT_DEF_LOAD | `RobotDefinition` | Loaded definition to render. |
 | ROBOT_DEF_HISTORY | `{ history, linkedPath, modelPath }` | Version list and associations. |
+| ROBOT_DEF_LINK_DEFAULT | `void` | Create a new linked sidecar file. |
 
 ## 10. Error Handling
 - If commit message is empty on Save Version, reject request and show UI validation error.
 - If sidecar write fails, still persist to attribute and log error.
 - If attribute read fails, fall back to sidecar read.
 - If loaded JSON is invalid, show error and do not overwrite current definition.
+- If linked file is missing, prompt user to create a new linked file.
 
 ## 11. Testing Strategy
 - Unit tests for RobotDefinitionStorage serialization and history behavior (mocked FS).
@@ -121,8 +127,6 @@ SolidLink previously stored robot definition state only in the UI. Users require
 
 ## 13. Open Questions
 1. Maximum acceptable JSON size for SolidWorks attribute storage?
-2. Should Save Version auto-increment a visible version number?
-3. Should there be a UI indicator when the linked sidecar file is missing?
 
 ## Definition of Done
 - [ ] Save/Load/Save Version/History UI implemented and wired.

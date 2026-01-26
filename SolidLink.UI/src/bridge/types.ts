@@ -97,6 +97,7 @@ export interface RobotDefinition {
 
 export interface RobotDefinitionHistoryEntry {
   id: string;
+  versionNumber?: number;
   message: string;
   timestampUtc: string;
 }
@@ -105,6 +106,7 @@ export interface RobotDefinitionHistoryPayload {
   history: RobotDefinitionHistoryEntry[];
   linkedPath?: string;
   modelPath?: string;
+  linkedMissing?: boolean;
 }
 
 export interface RobotDefinitionSaveVersionPayload {
@@ -139,6 +141,7 @@ export const MessageTypes = {
   ROBOT_DEF_SAVE_VERSION: 'ROBOT_DEF_SAVE_VERSION',
   ROBOT_DEF_HISTORY_REQUEST: 'ROBOT_DEF_HISTORY_REQUEST',
   ROBOT_DEF_HISTORY: 'ROBOT_DEF_HISTORY',
+  ROBOT_DEF_LINK_DEFAULT: 'ROBOT_DEF_LINK_DEFAULT',
   ROBOT_DEF_UNDO: 'ROBOT_DEF_UNDO',
   ROBOT_DEF_REDO: 'ROBOT_DEF_REDO',
   ROBOT_DEF_UPDATE: 'ROBOT_DEF_UPDATE',
