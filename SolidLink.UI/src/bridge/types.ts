@@ -95,6 +95,27 @@ export interface RobotDefinition {
   joints: RobotJoint[];
 }
 
+export interface RobotDefinitionHistoryEntry {
+  id: string;
+  message: string;
+  timestampUtc: string;
+}
+
+export interface RobotDefinitionHistoryPayload {
+  history: RobotDefinitionHistoryEntry[];
+  linkedPath?: string;
+  modelPath?: string;
+}
+
+export interface RobotDefinitionSaveVersionPayload {
+  definition: RobotDefinition;
+  message: string;
+}
+
+export interface RobotDefinitionLoadVersionPayload {
+  id: string;
+}
+
 // --- Message Type Constants ---
 export const MessageTypes = {
   PING: 'PING',
@@ -113,6 +134,11 @@ export const MessageTypes = {
   REF_ORIGIN_GLOBAL_TOGGLE: 'REF_ORIGIN_GLOBAL_TOGGLE',
   ROBOT_DEF_SAVE: 'ROBOT_DEF_SAVE',
   ROBOT_DEF_LOAD: 'ROBOT_DEF_LOAD',
+  ROBOT_DEF_LOAD_FILE: 'ROBOT_DEF_LOAD_FILE',
+  ROBOT_DEF_LOAD_VERSION: 'ROBOT_DEF_LOAD_VERSION',
+  ROBOT_DEF_SAVE_VERSION: 'ROBOT_DEF_SAVE_VERSION',
+  ROBOT_DEF_HISTORY_REQUEST: 'ROBOT_DEF_HISTORY_REQUEST',
+  ROBOT_DEF_HISTORY: 'ROBOT_DEF_HISTORY',
   ROBOT_DEF_UNDO: 'ROBOT_DEF_UNDO',
   ROBOT_DEF_REDO: 'ROBOT_DEF_REDO',
   ROBOT_DEF_UPDATE: 'ROBOT_DEF_UPDATE',

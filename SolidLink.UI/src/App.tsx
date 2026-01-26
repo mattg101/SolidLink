@@ -11,7 +11,11 @@ import type {
   RefGeometryHidePayload,
   RefOriginTogglePayload,
   RefOriginGlobalTogglePayload,
-  RobotDefinition
+  RobotDefinition,
+  RobotDefinitionHistoryPayload,
+  RobotDefinitionHistoryEntry,
+  RobotDefinitionSaveVersionPayload,
+  RobotDefinitionLoadVersionPayload
 } from './bridge'
 import { SelectionProvider, useSelection } from './context/SelectionContext'
 import { Viewport } from './components/Viewport/Viewport'
@@ -437,13 +441,20 @@ const MIN_VIEWPORT_HEIGHT = 100;
 const MIN_ROBOT_DEF_HEIGHT = 100;
 
 function App() {
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
-  const [tree, setTree] = useState<RobotTree | null>(null)
-  const [robotHistory, setRobotHistory] = useState<RobotHistory>(() => ({
-    past: [],
-    present: createDefaultRobotDefinition(),
-    future: []
-  }))
+    const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
+    const [tree, setTree] = useState<RobotTree | null>(null)
+    const [robotHistory, setRobotHistory] = useState<RobotHistory>(() => ({
+      past: [],
+      present: createDefaultRobotDefinition(),
+      future: []
+    }))
+    const [robotDefHistory, setRobotDefHistory] = useState<RobotDefinitionHistoryEntry[]>([])
+    const [robotDefLinkedPath, setRobotDefLinkedPath] = useState<string | null>(null)
+    const [robotDefModelPath, setRobotDefModelPath] = useState<string | null>(null)
+    const [showSaveVersion, setShowSaveVersion] = useState(false)
+    const [showHistory, setShowHistory] = useState(false)
+    const [versionMessage, setVersionMessage] = useState('')
+    const [versionError, setVersionError] = useState<string | null>(null)
   const [refGeometry, setRefGeometry] = useState<RefGeometryNode[]>([])
   const [refSelectedId, setRefSelectedId] = useState<string | null>(null)
   const [filter, setFilter] = useState('');
@@ -569,16 +580,23 @@ function App() {
     }
   })
 
-  useBridge<RobotDefinition>(MessageTypes.ROBOT_DEF_LOAD, (message) => {
-    if (!message.payload || message.payload.nodes.length === 0) {
-        // Reset to default if empty
-        replaceRobotDefinition(createDefaultRobotDefinition());
-        log('Loaded empty robot definition, reset to default', 'warn');
-        return;
-    }
-    replaceRobotDefinition(message.payload);
-    log('Loaded robot definition from add-in', 'info');
-  })
+    useBridge<RobotDefinition>(MessageTypes.ROBOT_DEF_LOAD, (message) => {
+      if (!message.payload || message.payload.nodes.length === 0) {
+          // Reset to default if empty
+          replaceRobotDefinition(createDefaultRobotDefinition());
+          log('Loaded empty robot definition, reset to default', 'warn');
+          return;
+      }
+      replaceRobotDefinition(message.payload);
+      log('Loaded robot definition from add-in', 'info');
+    })
+
+    useBridge<RobotDefinitionHistoryPayload>(MessageTypes.ROBOT_DEF_HISTORY, (message) => {
+      const payload = message.payload;
+      setRobotDefHistory(payload?.history ?? []);
+      setRobotDefLinkedPath(payload?.linkedPath ?? null);
+      setRobotDefModelPath(payload?.modelPath ?? null);
+    })
 
   useBridge<RefGeometryListPayload>(MessageTypes.REF_GEOMETRY_LIST, (message) => {
     const nodes = message.payload ?? [];
@@ -820,15 +838,61 @@ function App() {
     });
   }, []);
 
-  const redoRobotDefinition = useCallback(() => {
-    setRobotHistory(prev => {
-      if (prev.future.length === 0) return prev;
-      const [next, ...future] = prev.future;
-      const past = [...prev.past, prev.present].slice(-ROBOT_HISTORY_LIMIT);
-      bridgeClient.send(MessageTypes.ROBOT_DEF_UPDATE, next);
-      return { past, present: next, future };
-    });
-  }, []);
+    const redoRobotDefinition = useCallback(() => {
+      setRobotHistory(prev => {
+        if (prev.future.length === 0) return prev;
+        const [next, ...future] = prev.future;
+        const past = [...prev.past, prev.present].slice(-ROBOT_HISTORY_LIMIT);
+        bridgeClient.send(MessageTypes.ROBOT_DEF_UPDATE, next);
+        return { past, present: next, future };
+      });
+    }, []);
+
+    const handleSaveRobotDefinition = useCallback(() => {
+      bridgeClient.send(MessageTypes.ROBOT_DEF_SAVE, robotDefinition);
+    }, [robotDefinition]);
+
+    const handleSaveVersion = useCallback(() => {
+      setVersionMessage('');
+      setVersionError(null);
+      setShowSaveVersion(true);
+    }, []);
+
+    const confirmSaveVersion = useCallback(() => {
+      const message = versionMessage.trim();
+      if (!message) {
+        setVersionError('Commit message required.');
+        return;
+      }
+      const payload: RobotDefinitionSaveVersionPayload = {
+        definition: robotDefinition,
+        message
+      };
+      bridgeClient.send(MessageTypes.ROBOT_DEF_SAVE_VERSION, payload);
+      setShowSaveVersion(false);
+      setVersionMessage('');
+      setVersionError(null);
+    }, [robotDefinition, versionMessage]);
+
+    const handleLoadDefinitionFile = useCallback(() => {
+      bridgeClient.send(MessageTypes.ROBOT_DEF_LOAD_FILE);
+    }, []);
+
+    const handleHistoryOpen = useCallback(() => {
+      setShowHistory(true);
+      bridgeClient.send(MessageTypes.ROBOT_DEF_HISTORY_REQUEST);
+    }, []);
+
+    const handleHistoryClose = useCallback(() => {
+      setShowHistory(false);
+    }, []);
+
+    const handleLoadVersion = useCallback((id: string) => {
+      if (!id) return;
+      const payload: RobotDefinitionLoadVersionPayload = { id };
+      bridgeClient.send(MessageTypes.ROBOT_DEF_LOAD_VERSION, payload);
+      setShowHistory(false);
+    }, []);
 
   const orderedIds = useMemo(() => {
     if (!tree?.rootFrame) return [];
@@ -1418,14 +1482,17 @@ function App() {
             style={{ height: '6px', cursor: 'row-resize', background: 'var(--color-border)' }}
           />
 
-          <div style={{ flex: 1, minHeight: `${MIN_ROBOT_DEF_HEIGHT}px` }}>
-            <RobotDefinitionPanel
-              definition={robotDefinition}
-              onDefinitionChange={commitRobotDefinition}
-              onSave={() => bridgeClient.send(MessageTypes.ROBOT_DEF_SAVE, robotDefinition)}
-              onUndo={() => {
-                bridgeClient.send(MessageTypes.ROBOT_DEF_UNDO);
-                undoRobotDefinition();
+            <div style={{ flex: 1, minHeight: `${MIN_ROBOT_DEF_HEIGHT}px` }}>
+              <RobotDefinitionPanel
+                definition={robotDefinition}
+                onDefinitionChange={commitRobotDefinition}
+                onSave={handleSaveRobotDefinition}
+                onSaveVersion={handleSaveVersion}
+                onLoad={handleLoadDefinitionFile}
+                onHistory={handleHistoryOpen}
+                onUndo={() => {
+                  bridgeClient.send(MessageTypes.ROBOT_DEF_UNDO);
+                  undoRobotDefinition();
               }}
               onRedo={() => {
                 bridgeClient.send(MessageTypes.ROBOT_DEF_REDO);
@@ -1666,6 +1733,87 @@ function App() {
               <div><strong>Show Hidden</strong> Toggle hidden items in tree</div>
               <div><strong>Unhide All</strong> Restore all hidden items</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showSaveVersion && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 60
+          }}
+        >
+          <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '12px', padding: '18px', minWidth: '320px', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.95rem' }}>Save Robot Definition Version</strong>
+              <button onClick={() => setShowSaveVersion(false)}>Close</button>
+            </div>
+            <div style={{ fontSize: '0.85rem', marginBottom: '8px', color: '#9cb5c8' }}>Commit message (required)</div>
+            <input
+              value={versionMessage}
+              onChange={(e) => {
+                setVersionMessage(e.target.value);
+                setVersionError(null);
+              }}
+              placeholder="Describe the change..."
+              style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'rgba(10,18,28,0.7)', color: 'var(--color-text)' }}
+            />
+            {versionError && (
+              <div style={{ marginTop: '6px', color: '#ff8a80', fontSize: '0.8rem' }}>{versionError}</div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' }}>
+              <button onClick={() => setShowSaveVersion(false)}>Cancel</button>
+              <button className="robot-def-button robot-def-primary" onClick={confirmSaveVersion}>Save Version</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHistory && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 60
+          }}
+        >
+          <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '12px', padding: '18px', minWidth: '420px', maxWidth: '560px', maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.95rem' }}>Robot Definition History</strong>
+              <button onClick={handleHistoryClose}>Close</button>
+            </div>
+            {(robotDefModelPath || robotDefLinkedPath) && (
+              <div style={{ fontSize: '0.75rem', color: '#8aa4b8', marginBottom: '10px' }}>
+                {robotDefModelPath && <div>Model: {robotDefModelPath}</div>}
+                {robotDefLinkedPath && <div>Linked: {robotDefLinkedPath}</div>}
+              </div>
+            )}
+            {robotDefHistory.length === 0 && (
+              <div style={{ fontSize: '0.85rem', color: '#9cb5c8' }}>No saved versions yet.</div>
+            )}
+            {robotDefHistory.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[...robotDefHistory].reverse().map(entry => (
+                  <div key={entry.id} style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '10px', display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{entry.message || '(No message)'}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#8aa4b8' }}>{new Date(entry.timestampUtc).toLocaleString()}</div>
+                    </div>
+                    <button onClick={() => handleLoadVersion(entry.id)}>Load</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

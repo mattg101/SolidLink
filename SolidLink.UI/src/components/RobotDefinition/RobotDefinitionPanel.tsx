@@ -115,6 +115,9 @@ type RobotDefinitionPanelProps = {
   definition: RobotDefinition;
   onDefinitionChange: (next: RobotDefinition) => void;
   onSave: () => void;
+  onSaveVersion?: () => void;
+  onLoad?: () => void;
+  onHistory?: () => void;
   onClear: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -133,6 +136,9 @@ export const RobotDefinitionPanel = ({
   definition,
   onDefinitionChange,
   onSave,
+  onSaveVersion,
+  onLoad,
+  onHistory,
   onClear,
   onUndo,
   onRedo,
@@ -504,14 +510,23 @@ export const RobotDefinitionPanel = ({
         <div className="robot-def-header-left">
           <div className="robot-def-title">Robot Definition</div>
         </div>
-        <div className="robot-def-actions">
-          <button className="robot-def-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
-          <button className="robot-def-button" onClick={onRedo} disabled={!canRedo}>Redo</button>
-          <button className="robot-def-button" onClick={onClear}>Clear</button>
-          <button className="robot-def-button robot-def-primary" onClick={onSave}>Save</button>
-          <button className="robot-def-button robot-def-ghost" onClick={handleFit}>Fit</button>
+          <div className="robot-def-actions">
+            <button className="robot-def-button" onClick={onUndo} disabled={!canUndo}>Undo</button>
+            <button className="robot-def-button" onClick={onRedo} disabled={!canRedo}>Redo</button>
+            <button className="robot-def-button" onClick={onClear}>Clear</button>
+            <button className="robot-def-button robot-def-primary" onClick={onSave}>Save</button>
+            {onSaveVersion && (
+              <button className="robot-def-button" onClick={onSaveVersion}>Save Version</button>
+            )}
+            {onLoad && (
+              <button className="robot-def-button" onClick={onLoad}>Load</button>
+            )}
+            {onHistory && (
+              <button className="robot-def-button" onClick={onHistory}>History</button>
+            )}
+            <button className="robot-def-button robot-def-ghost" onClick={handleFit}>Fit</button>
+          </div>
         </div>
-      </div>
       <div className="robot-def-body">
         <div className="robot-def-canvas">
           <div

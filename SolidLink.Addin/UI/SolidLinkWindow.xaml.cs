@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Win32;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SolidWorks.Interop.sldworks;
 using SolidLink.Addin.Adapters;
 using SolidLink.Addin.Abstractions;
@@ -21,6 +24,7 @@ namespace SolidLink.Addin.UI
         private readonly TreeTraverser traverser;
         private readonly ISolidWorksContext context;
         private readonly HiddenStateService hiddenStateService;
+        private readonly RobotDefinitionStorage robotDefinitionStorage;
         private static readonly int[] DevPorts = new[] { 5173, 5174, 5175, 5176, 5177, 5178 };
         private static readonly TimeSpan DevProbeTimeout = TimeSpan.FromMilliseconds(300);
 
@@ -32,6 +36,7 @@ namespace SolidLink.Addin.UI
             context = new SolidWorksContext(swApp);
             traverser = new TreeTraverser(context);
             hiddenStateService = new HiddenStateService();
+            robotDefinitionStorage = new RobotDefinitionStorage(swApp);
             InitializeWebView();
         }
 
@@ -124,6 +129,7 @@ namespace SolidLink.Addin.UI
                         bridge.Send("TREE_RESPONSE", tree);
                         bridge.Send("REF_GEOMETRY_LIST", refGeometry);
                         SendHiddenStateRestore();
+                        HandleRobotDefinitionLoad();
                     }
                     else
                     {
@@ -158,6 +164,30 @@ namespace SolidLink.Addin.UI
                 // UI-only for now; keep hook for future SolidWorks viewport integration.
                 System.Diagnostics.Debug.WriteLine($"[SolidLink] Ref origin toggle received: {message.Type}");
             }
+            else if (message.Type == "ROBOT_DEF_SAVE")
+            {
+                HandleRobotDefinitionSave(message.Payload);
+            }
+            else if (message.Type == "ROBOT_DEF_SAVE_VERSION")
+            {
+                HandleRobotDefinitionSaveVersion(message.Payload);
+            }
+            else if (message.Type == "ROBOT_DEF_LOAD")
+            {
+                HandleRobotDefinitionLoad();
+            }
+            else if (message.Type == "ROBOT_DEF_LOAD_FILE")
+            {
+                HandleRobotDefinitionLoadFile();
+            }
+            else if (message.Type == "ROBOT_DEF_LOAD_VERSION")
+            {
+                HandleRobotDefinitionLoadVersion(message.Payload);
+            }
+            else if (message.Type == "ROBOT_DEF_HISTORY_REQUEST")
+            {
+                HandleRobotDefinitionHistoryRequest();
+            }
             else if (message.Type == "SELECT_FRAME")
             {
                 SelectFrame(message.Payload);
@@ -190,6 +220,193 @@ namespace SolidLink.Addin.UI
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[SolidLink] Selection error: {ex.Message}");
+            }
+        }
+
+        private void HandleRobotDefinitionSave(object payload)
+        {
+            var model = GetActiveModel();
+            if (model == null)
+            {
+                return;
+            }
+
+            var definition = ConvertPayloadToDefinition(payload);
+            if (definition == null)
+            {
+                SendError("Failed to save robot definition: invalid payload.");
+                return;
+            }
+
+            var record = robotDefinitionStorage.SaveCurrent(model, definition);
+            if (record == null)
+            {
+                SendError("Failed to save robot definition.");
+                return;
+            }
+            SendRobotDefinitionHistory(model, record);
+        }
+
+        private void HandleRobotDefinitionSaveVersion(object payload)
+        {
+            var model = GetActiveModel();
+            if (model == null)
+            {
+                return;
+            }
+
+            var request = ParsePayload<RobotDefinitionSaveVersionRequest>(payload);
+            if (request?.Definition == null || string.IsNullOrWhiteSpace(request.Message))
+            {
+                SendError("Commit message required to save a version.");
+                return;
+            }
+
+            var record = robotDefinitionStorage.SaveVersion(model, request.Definition, request.Message);
+            if (record == null)
+            {
+                SendError("Failed to save robot definition version.");
+                return;
+            }
+            SendRobotDefinitionHistory(model, record);
+        }
+
+        private void HandleRobotDefinitionLoad()
+        {
+            var model = GetActiveModel();
+            if (model == null)
+            {
+                return;
+            }
+
+            var record = robotDefinitionStorage.LoadAssociated(model);
+            if (record?.Definition != null)
+            {
+                bridge.Send("ROBOT_DEF_LOAD", record.Definition);
+            }
+            SendRobotDefinitionHistory(model, record);
+        }
+
+        private void HandleRobotDefinitionLoadFile()
+        {
+            var model = GetActiveModel();
+            if (model == null)
+            {
+                return;
+            }
+
+            var dialog = new OpenFileDialog
+            {
+                Filter = "SolidLink Robot Definition (*.solidlink.json;*.json)|*.solidlink.json;*.json|All files (*.*)|*.*",
+                Multiselect = false,
+                CheckFileExists = true,
+                Title = "Load Robot Definition"
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var record = robotDefinitionStorage.LoadFromFile(dialog.FileName);
+            if (record?.Definition == null)
+            {
+                SendError("Failed to load robot definition file.");
+                return;
+            }
+
+            record = robotDefinitionStorage.SaveRecord(model, record, dialog.FileName);
+            if (record?.Definition != null)
+            {
+                bridge.Send("ROBOT_DEF_LOAD", record.Definition);
+            }
+            SendRobotDefinitionHistory(model, record);
+        }
+
+        private void HandleRobotDefinitionLoadVersion(object payload)
+        {
+            var model = GetActiveModel();
+            if (model == null)
+            {
+                return;
+            }
+
+            var request = ParsePayload<RobotDefinitionLoadVersionRequest>(payload);
+            if (request == null || string.IsNullOrWhiteSpace(request.Id))
+            {
+                SendError("Invalid version request.");
+                return;
+            }
+
+            var version = robotDefinitionStorage.FindVersion(model, request.Id);
+            if (version?.Definition != null)
+            {
+                bridge.Send("ROBOT_DEF_LOAD", version.Definition);
+            }
+            else
+            {
+                SendError("Requested version not found.");
+            }
+            SendRobotDefinitionHistory(model, null);
+        }
+
+        private void HandleRobotDefinitionHistoryRequest()
+        {
+            var model = GetActiveModel();
+            SendRobotDefinitionHistory(model, null);
+        }
+
+        private void SendError(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message)) return;
+            bridge.Send("ERROR_RESPONSE", message);
+        }
+
+        private void SendRobotDefinitionHistory(ModelDoc2 model, RobotDefinitionRecord record)
+        {
+            if (model == null)
+            {
+                bridge.Send("ROBOT_DEF_HISTORY", new { history = new List<object>() });
+                return;
+            }
+
+            record ??= robotDefinitionStorage.LoadAssociated(model);
+            var history = record?.History?
+                .Select(version => (object)new
+                {
+                    id = version.Id,
+                    message = version.Message,
+                    timestampUtc = version.TimestampUtc
+                })
+                .ToList() ?? new List<object>();
+
+            bridge.Send("ROBOT_DEF_HISTORY", new
+            {
+                history,
+                linkedPath = record?.LinkedDefinitionPath,
+                modelPath = record?.ModelPath ?? model.GetPathName()
+            });
+        }
+
+        private static JToken ConvertPayloadToDefinition(object payload)
+        {
+            if (payload == null) return null;
+            if (payload is JToken token) return token;
+            try
+            {
+                return JToken.FromObject(payload);
+            }
+            catch
+            {
+                try
+                {
+                    var json = JsonConvert.SerializeObject(payload);
+                    return JToken.Parse(json);
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
@@ -308,6 +525,21 @@ namespace SolidLink.Addin.UI
 
             [JsonProperty("hidden")]
             public bool Hidden { get; set; }
+        }
+
+        private sealed class RobotDefinitionSaveVersionRequest
+        {
+            [JsonProperty("definition")]
+            public JToken Definition { get; set; }
+
+            [JsonProperty("message")]
+            public string Message { get; set; }
+        }
+
+        private sealed class RobotDefinitionLoadVersionRequest
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
         }
 
         protected override void OnClosed(EventArgs e)

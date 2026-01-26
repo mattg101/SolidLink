@@ -105,56 +105,29 @@ namespace SolidLink.Addin.Adapters
 
         private IEnumerable<Component2> GetOrderedChildren()
         {
-            var directChildren = _component?.GetChildren() as object[];
-            var directList = directChildren?.OfType<Component2>().ToList() ?? new List<Component2>();
-            if (directList.Count <= 1)
-            {
-                return directList;
-            }
-
-            var orderIndex = GetAssemblyOrderIndex();
-            if (orderIndex.Count == 0)
-            {
-                return directList;
-            }
-
-            return directList
-                .OrderBy(child =>
-                {
-                    var key = GetComponentOrderKey(child);
-                    return orderIndex.TryGetValue(key, out var index) ? index : int.MaxValue;
-                })
-                .ToList();
-        }
-
-        private Dictionary<string, int> GetAssemblyOrderIndex()
-        {
-            var orderIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             ModelDoc2 modelDoc = null;
             try
             {
                 modelDoc = _component?.GetModelDoc2() as ModelDoc2;
-                if (modelDoc == null || modelDoc.GetType() != (int)swDocumentTypes_e.swDocASSEMBLY)
+                if (modelDoc != null && modelDoc.GetType() == (int)swDocumentTypes_e.swDocASSEMBLY)
                 {
-                    return orderIndex;
-                }
-
-                var assembly = modelDoc as AssemblyDoc;
-                var ordered = assembly?.GetComponents(true) as object[];
-                if (ordered == null || ordered.Length == 0)
-                {
-                    return orderIndex;
-                }
-
-                var index = 0;
-                foreach (var comp in ordered.OfType<Component2>())
-                {
-                    var key = GetComponentOrderKey(comp);
-                    if (!string.IsNullOrWhiteSpace(key) && !orderIndex.ContainsKey(key))
+                    var features = modelDoc.FeatureManager?.GetFeatures(true) as object[];
+                    if (features != null)
                     {
-                        orderIndex[key] = index;
+                        var ordered = new List<Component2>();
+                        foreach (var obj in features)
+                        {
+                            var feature = obj as Feature;
+                            if (feature == null) continue;
+                            CollectComponentsFromFeature(feature, ordered);
+                            ComHelpers.ReleaseComObject(feature);
+                        }
+
+                        if (ordered.Count > 0)
+                        {
+                            return ordered;
+                        }
                     }
-                    index++;
                 }
             }
             catch
@@ -165,19 +138,50 @@ namespace SolidLink.Addin.Adapters
                 ComHelpers.ReleaseComObject(modelDoc);
             }
 
-            return orderIndex;
-        }
-
-        private string GetComponentOrderKey(Component2 component)
-        {
-            if (component == null)
+            var children = _component?.GetChildren() as object[];
+            if (children == null || children.Length == 0)
             {
-                return string.Empty;
+                return Enumerable.Empty<Component2>();
             }
 
-            var name = ComHelpers.SafeCall(() => component.Name2 ?? string.Empty, string.Empty);
-            var path = ComHelpers.SafeCall(() => component.GetPathName() ?? string.Empty, string.Empty);
-            return $"{name}|{path}";
+            return children.OfType<Component2>();
+        }
+
+        private void CollectComponentsFromFeature(Feature feature, List<Component2> ordered)
+        {
+            if (feature == null) return;
+
+            try
+            {
+                var specific = feature.GetSpecificFeature2();
+                if (specific is Component2 component)
+                {
+                    ordered.Add(component);
+                }
+            }
+            catch
+            {
+            }
+
+            Feature sub = null;
+            try
+            {
+                sub = feature.GetFirstSubFeature();
+                while (sub != null)
+                {
+                    CollectComponentsFromFeature(sub, ordered);
+                    var next = sub.GetNextSubFeature();
+                    ComHelpers.ReleaseComObject(sub);
+                    sub = next;
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                ComHelpers.ReleaseComObject(sub);
+            }
         }
 
         public IEnumerable<Abstractions.IBody> Bodies
