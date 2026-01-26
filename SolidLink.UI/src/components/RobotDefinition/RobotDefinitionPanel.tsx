@@ -559,6 +559,11 @@ export const RobotDefinitionPanel = ({
                         r={6}
                         className={`robot-joint-node ${isSelected ? 'selected' : ''}`}
                         fill={JOINT_STYLE[joint.type].color}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleSelectJoint(joint.id, event.ctrlKey || event.metaKey);
+                        }}
+                        style={{ cursor: 'pointer' }}
                       />
                     </g>
                   );
