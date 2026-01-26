@@ -1,19 +1,21 @@
 ---
 name: takopi
-description: Use when working through Takopi (Telegram bridge) to route Codex tasks by project, branch worktree, or topic; covers directives like /project, @branch, engine prefixes, ctx footer behavior, and /new resets.
+description: Guidance for Takopi (Telegram bridge): directives, branch/worktree routing, ctx footers, topics, and file retrieval.
+trigger: always_on
 ---
-# Takopi Context
 
-Use this skill when a request is issued from Takopi or when you need to format guidance for Takopi messages. Keep replies short and compatible with Telegram usage.
+This skill follows `engineering-doctrine` and `structured-workflow`.
 
-## Core Behaviors
+## When to use
+- A request is being issued via Takopi (Telegram).
+- You need to format instructions that Takopi will parse (directives, `/file get`, topic context).
 
+## Core behaviors
 - Directives live at the start of the first line: `/project`, `/engine`, and `@branch`.
-- Replying to a message that includes a backticked `ctx:` footer keeps the same project/branch; do not restate directives unless asked.
+- Replying to a message that includes a backticked `ctx:` footer keeps the same project/branch.
 - `@branch` runs in a dedicated git worktree for that branch.
 
-## Quick Patterns
-
+## Quick patterns
 ```text
 /project task text
 /project @branch task text
@@ -21,35 +23,35 @@ Use this skill when a request is issued from Takopi or when you need to format g
 ```
 
 Examples:
-
 ```text
-/solidlink @feat/branch-name update docs
+/solidlink @feat/ui-panel polish error states and add tests
 /solidlink fix build warnings
 ```
 
-## File Operations
+## Topics (Telegram forums)
+- Use `/topic` and `/ctx` to bind a project/branch context inside a thread.
+- Use `/new` to reset stored session context when switching tasks.
 
-When asking the user to download files via Takopi's `/file get` command:
-- Use **relative paths** from the current working directory (project root).
-- Avoid absolute paths (e.g., `C:\...`) as they are rejected by the harness.
-- If a file is in a subdirectory, include the full relative path from the project root.
+## File retrieval (`/file get`)
+Rules:
+- Use **relative paths** from the project root.
+- Avoid absolute paths (`C:\...`) and home paths; the harness rejects them.
+- Prefer listing files first (`ls`, `find`) then emit `/file get` lines.
 
 Examples:
 ```text
 /file get SolidLink.UI/test-results/robot-definition-renders-robot-definition-panel/test-finished-1.png
 /file get SolidLink.UI/test-results/viewport-shift-H-hides-sel-3bc76-es-and-updates-bridge-state/video.webm
-/file get docs/dev/orchestration/feature-spec__feat-example.md
+/file get docs/dev/orchestration/feature-spec__feat-ui-panel.md
 ```
 
-When generating `/file get` commands for test artifacts:
-1. Run tests first to generate artifacts
-2. Use `find` or `ls` to locate artifact paths
-3. Format as relative paths from project root in code blocks
+## Test artifacts playbook
+1. Run tests to generate artifacts.
+2. Locate outputs:
+   ```sh
+   find . -maxdepth 4 -type f \( -name "*.png" -o -name "*.webm" -o -name "*.xml" \)
+   ```
+3. Emit `/file get <relative-path>` lines in a code block.
 
-## Topics (Telegram forums)
-
-In topic threads, use `/topic` and `/ctx` to bind a project/branch context. Use `/new` to reset stored session context.
-
-## References
-
-See `references/takopi-context.md` for the concise rules and command list.
+## Reference
+See `references/takopi-context.md` for the concise rules and directive list.

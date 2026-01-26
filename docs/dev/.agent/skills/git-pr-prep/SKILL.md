@@ -1,31 +1,58 @@
 ---
 name: git-pr-prep
-description: Prepares a Pull Request by staging changes, verifying against acceptance criteria, and creating the PR via GH CLI. Use this skill when a feature is complete and ready for review.
+description: Prepare a high-signal Pull Request: stage intentionally, verify against acceptance criteria, and create the PR via `gh`.
 trigger: always_on
 ---
 
-This skill ensures that every Pull Request is descriptive, verified, and adheres to the project''s technical rigor as defined in `orchestration/project_context.md` and `.agent/rules/directives/pr_acceptance_criteria.md`.
+This skill follows `engineering-doctrine` and `structured-workflow`.
 
-## PR Preparation Workflow
+## When to use
+- A feature/fix is complete and you want review.
+- You need a consistent PR body, checklist, and verification instructions.
 
-1.  **Staging & Intent**:
-    -   Verify you are on the correct `dev` or feature branch.
-    -   Stage only the files relevant to the task. Avoid staging unrelated debug logs or temporary files.
-    -   Use the `git status -u` command to identify untracked files that should be included.
-    -   Include test result artifacts in the commit when tests are run (for example, `TestResult.xml`).
+## Pre-flight
+1. Confirm branch:
+   ```sh
+   git branch --show-current
+   ```
+2. Ensure working tree is clean **except** the intended changes:
+   ```sh
+   git status -u
+   ```
+3. Run the fastest high-signal verification you have (lint/unit tests/build). Prefer commands already used in the repo.
 
-2.  **Rigor Check**:
-    -   Self-audit the code against `pr_acceptance_criteria.md`.
-    -   Ensure no `console.log` or temporary `TODO` comments remain in the source.
-    -   Verify that all C# models have appropriate `[DataMember]` attributes if they are part of the JSON bridge.
+## Stage intentionally
+- Use interactive staging to keep the diff reviewable:
+  ```sh
+  git add -p
+  ```
+- Re-check:
+  ```sh
+  git diff --cached
+  ```
 
-3.  **PR Artifact**:
-    -   Create or update the `pull_requests/pr_[id].md` file using the provided template.
-    -   Include specific instructions for the Tester to verify the changes.
-    -   For UI-impacting changes, include links or references to image and WebM artifacts in the PR artifact (and commit them when stored in-repo).
+## PR content requirements
+Include:
+- **What changed** (bullet list)
+- **Why** (1–2 bullets)
+- **How to verify** (exact commands + any manual steps)
+- **Screenshots/video** for UI changes (if applicable)
+- **Risks/roll-back** if the change is invasive
 
-4.  **GH CLI Execution**:
-    -   Run `gh pr create` with a clear title and a body that references the PR artifact or contains a concise summary of the `walkthrough.md`.
-    -   Target the `main` branch unless instructed otherwise.
+If the repo has a PR template or explicit acceptance criteria doc, follow it.
 
+## Create the PR (GH CLI)
+```sh
+gh pr create --base main --head HEAD --title "..." --body "..."
+```
 
+### Useful extras
+- Open in browser after creation:
+  ```sh
+  gh pr view --web
+  ```
+
+## Guardrails
+- Do not include generated binaries, node_modules, or secrets.
+- Keep PRs small: if the diff is large, split into stacked PRs or separate commits.
+- If tests produced artifacts that belong in-repo, include them only if the project convention expects that.

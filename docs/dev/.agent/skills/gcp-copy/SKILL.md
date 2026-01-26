@@ -1,26 +1,9 @@
 ---
 name: gcp-copy
-description: TODO
----
----
-description: git commit and push
+description: Deprecated alias of `gcp`. Use `gcp` for commit + push workflow and guardrails.
+trigger: always_on
 ---
 
-// turbo
-1. Add all changes to git
-```powershell
-git add .
-```
+Use `gcp`.
 
-2. Prompt the user for a commit message if one wasn't provided, otherwise use the provided context.
-
-3. Commit the changes
-```powershell
-git commit -m "commit message"
-```
-
-4. Push the changes to the remote repository
-```powershell
-git push
-```
-
+(Kept for backwards compatibility with older prompts/macros.)

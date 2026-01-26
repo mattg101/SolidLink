@@ -4,31 +4,32 @@ description: Canonical workflow for clarifying requirements, executing work, and
 trigger: always_on
 ---
 
+This skill follows `engineering-doctrine`.
+
 ## Canonical Workflow
 
-### 1. Clarify
-- Identify objective, scope, and definition of done
-- Detect underspecification early
-- Ask the minimum number of blocking questions
+### 1) Clarify
+- Objective, scope, and definition of done
+- Inputs available (repo paths, tools, constraints)
+- Minimum set of **blocking** questions (prefer 0–2)
 
-### 2. Decide
-- Choose an approach explicitly
+### 2) Decide
+- Pick an approach explicitly
 - State assumptions and constraints
-- Record tradeoffs where relevant
+- Note tradeoffs (speed vs. safety, complexity vs. flexibility) when relevant
 
-### 3. Execute
+### 3) Execute
 - Implement only what is in scope
 - Follow project conventions
-- Avoid speculative extensions
+- Prefer small, reversible steps and keep diffs tight
 
-### 4. Verify
+### 4) Verify
 - Check against acceptance criteria
+- Run/describe the verification steps (tests, build, manual smoke)
 - Ensure no debug artifacts remain
-- Confirm outputs are review-ready
 
-### 5. Sync
-- Update local state
-- Prepare artifacts for downstream consumers (PRs, docs, tests)
+### 5) Sync
+- Update local state (pull, rebase/merge policy per repo)
+- Prepare artifacts for downstream consumers (PR text, docs, test results)
 
 This workflow is mandatory unless a skill explicitly overrides it.
-

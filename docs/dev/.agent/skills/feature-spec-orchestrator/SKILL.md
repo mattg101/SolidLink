@@ -1,45 +1,71 @@
 ---
 name: feature-spec-orchestrator
-description: Create feature spec files from project docs, commit and push to main, and create matching feature branches from main.
+description: Generate implementation-ready feature specs and ensure matching feature branches exist, aligned to project orchestration docs.
 trigger: always_on
 ---
+
 This skill follows `engineering-doctrine` and `structured-workflow`.
 
-## When To Use
-- When a user asks for new feature specs in `docs/dev/orchestration/`.
-- When the workflow requires aligning specs to feature branches.
+## When to use
+- User asks for new feature specs under a project docs folder (e.g., `docs/dev/orchestration/`).
+- Workflow requires “specs first” on `main`, then feature branches created from updated `main`.
 
-## Inputs
-- Project docs in `docs/dev/orchestration/` (especially `project_context.md`, `project_design_spec.md`, `project_manifesto.md`).
-- Spec template `docs/dev/orchestration/template_tech_spec.md`.
+## Inputs (typical)
+- Project docs such as `project_context.md`, `project_design_spec.md`, `project_manifesto.md`
+- Spec template (e.g., `template_tech_spec.md`)
+- Project conventions for branch naming and PR workflow
 
-## Required Outputs
-- One spec file per feature in `docs/dev/orchestration/`.
-- Filename must include the exact feature branch name.
-- Specs must be implementation-ready and traceable to project docs.
+## Required outputs
+- One spec file per feature (implementation-ready, testable requirements)
+- Filename includes the **exact** feature branch name, verbatim
+- Specs are traceable back to the project docs (link/quote section references)
 
-## Execution Workflow
-1. **Clarify**
-   - Confirm features or choose an appropriate set from the project roadmap if asked to decide.
-   - Decide on a branch naming scheme (e.g., `feat-...`) and use it consistently.
-2. **Decide**
-   - Map each feature to a scoped spec aligned with the roadmap milestones and constraints.
-   - Use the template sections; expand with additional sections if required by project conventions.
-3. **Execute**
-   - Create spec files in `docs/dev/orchestration/` with filenames like:
-     - `feature-spec__<branch-name>.md`
-   - Populate each spec using `template_tech_spec.md` plus any required sections from agent guidance.
-4. **Verify**
-   - Ensure each spec references relevant project context and has testable requirements.
-   - Confirm filenames include the branch name verbatim.
-5. **Sync (Git)**
-   - Commit specs to `main` with a clear message.
-   - Push `main` to `origin` before creating any feature branches.
-   - Create feature branches from updated `main` with the same names used in the spec filenames.
-   - Push all new feature branches to `origin`.
+## Workflow
+
+### 1) Decide the feature set
+- If the user provides a list, use it.
+- If not, infer a small, coherent slice from the roadmap and state the choice.
+
+### 2) Pick branch names (deterministic)
+Use a stable scheme like:
+- `feat/<short-kebab>` for features
+- `fix/<short-kebab>` for bugs
+Keep names short and descriptive.
+
+### 3) Write specs
+Create files like:
+- `feature-spec__feat/<short-kebab>.md` (or the repo’s preferred naming)
+
+Each spec must include:
+- Purpose / non-goals
+- User workflows
+- Requirements (functional + non-functional) that are testable
+- Interfaces / data model touchpoints
+- Error handling + telemetry/logging expectations (if relevant)
+- Testing strategy + acceptance checklist
+
+### 4) Commit specs to main
+```sh
+git checkout main
+git pull origin main
+git add docs/dev/orchestration
+git commit -m "Add feature specs for <project>"
+git push origin main
+```
+
+### 5) Create matching branches from updated main
+```sh
+git fetch origin
+git checkout main
+git pull origin main
+
+git checkout -b "feat/<short-kebab>"
+git push -u origin HEAD
+```
+
+Repeat for each branch name used in the spec filenames.
 
 ## Guardrails
-- Do not include unrelated files (e.g., logs, test outputs) in commits.
-- Do not alter existing specs unless explicitly requested.
-- Keep content deterministic and avoid speculative scope beyond the docs.
-
+- Don’t change existing specs unless asked.
+- Don’t create branches until specs are pushed to `main`.
+- Don’t add unrelated files to the specs commit.

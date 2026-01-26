@@ -1,52 +1,47 @@
 ---
 name: skill-deploy-update
-description: Use when creating, updating, or syncing Codex skills for this repo, including installing skills into CODEX_HOME and using scripts/sync_skills.ps1 to symlink repo skills; also use when drafting a new SKILL.md or adjusting skill folder structure.
+description: Create/update/sync Codex skills for this repo. Keep skills in-repo and link into CODEX_HOME using the sync script.
+trigger: always_on
 ---
-# Skill Deploy and Update
 
-Use this skill to keep project skills stored in-repo and linked into CODEX_HOME via the sync script. Prefer symlinks so the repo is the source of truth.
+This skill follows `engineering-doctrine` and `structured-workflow`.
 
-## When to Use
+## When to use
+- Add, rename, or restructure a skill folder under `.agent/skills/`
+- Update SKILL.md contents or bundled resources (references/assets/scripts)
+- Sync repo skills into `CODEX_HOME` so Codex discovers them
 
-- Add, rename, or restructure a skill folder in docs/skills.
-- Update SKILL.md contents or bundled resources.
-- Sync repo skills into CODEX_HOME for Codex discovery.
+## Repo layout
+Each skill lives in its own folder:
 
-## Repo Layout
-
-Each skill must live in its own folder:
-
-```
-docs/skills/<skill-name>/
+```text
+.agent/skills/<skill-name>/
   SKILL.md
-  scripts/
-  references/
-  assets/
+  scripts/        (optional)
+  references/     (optional)
+  assets/         (optional)
 ```
 
-The SKILL.md frontmatter name must match the folder name.
+Rule: the `name:` in SKILL.md frontmatter **must** match the folder name.
 
-## Sync Script
-
-Use the repo sync script to link all repo skills into CODEX_HOME:
+## Sync script
+Run the repo sync script to link skills into `CODEX_HOME`:
 
 ```powershell
-.\\scripts\\sync_skills.ps1
+.\scripts\sync_skills.ps1
 ```
 
-Optional: pass a custom repo skills path:
+Optional: pass an explicit repo skills path:
 
 ```powershell
-.\\scripts\\sync_skills.ps1 -RepoSkillsPath "C:\\path\\to\\repo\\docs\\skills"
+.\scripts\sync_skills.ps1 -RepoSkillsPath "C:\path\to\repo\.agent\skills"
 ```
 
-## How to Update a Skill
-
-1. Edit the skill folder under docs/skills.
-2. Keep instructions concise and imperative.
+## Update flow
+1. Edit the skill in `.agent/skills/<skill-name>/`.
+2. Keep instructions imperative and runnable (commands in fenced blocks).
 3. Re-run the sync script.
-4. If a skill was renamed, delete the old link in CODEX_HOME if it is not a symlink.
+4. If you renamed a skill, remove the old link in `CODEX_HOME` (only if it isn't a symlink).
 
-## Skill Template
-
-Use the bundled template at assets/skill-template/SKILL.md as a starting point.
+## Template
+Start from `assets/skill-template/SKILL.md` when creating a new skill.

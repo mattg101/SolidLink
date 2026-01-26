@@ -1,64 +1,65 @@
 ---
 name: git-worktrees
-description: Work on multiple branches in parallel using git worktrees via the git-wt helper to avoid context switching or merge noise.
+description: Work on multiple branches in parallel using git worktrees. Prefer `git wt` (git-wt) for safer defaults.
 trigger: always_on
 ---
-This skill follows `engineering-doctrine`.
 
-## Core Model
+This skill follows `engineering-doctrine` and `structured-workflow`.
 
-- One branch == one directory == one line of work
-- All worktrees share a single `.git` database
-- Each worktree is bound to its branch while it exists
+## Mental model
+- **One branch = one folder = one line of work**
+- All worktrees share the same underlying `.git` database
+- A worktree is "attached" to a branch while it exists
 
-## Preferred Tooling
+## Preferred tooling
+Default to `git wt` (https://github.com/k1LoW/git-wt). Use raw `git worktree` only if `git wt` is unavailable.
 
-Use `git wt` (https://github.com/k1LoW/git-wt) as the default interface. It wraps `git worktree` with safer defaults and faster workflows.
-
-## Standard Setup
-
-Optional, if you want worktrees stored in `.worktrees`:
-
+## Standard setup (optional)
+Store worktrees in `.worktrees/` inside the repo:
 ```sh
 mkdir -p .worktrees
 git config wt.basedir .worktrees
 ```
 
-## Quick Start
+## Common operations
 
+### List
 ```sh
-git wt                       # list worktrees
-git wt <branch|worktree>     # switch/create (creates branch and worktree if needed)
-git wt --nocd <branch|worktree>
-git wt -d <branch|worktree>  # safe delete (worktree + branch)
-git wt -D <branch|worktree>  # force delete
+git wt
 ```
 
-## Configuration
+### Create or switch
+```sh
+git wt <branch-or-worktree>
+# stay in current directory:
+git wt --nocd <branch-or-worktree>
+```
 
-Use `git config` for defaults; override with flags when needed.
+### Delete safely
+```sh
+git wt -d <branch-or-worktree>
+```
 
-- `wt.basedir` / `--basedir`: base directory for worktrees (default `../{gitroot}-wt`)
-- `wt.copyignored` / `--copyignored`: copy gitignored files on create
-- `wt.copyuntracked` / `--copyuntracked`: copy untracked files on create
-- `wt.copymodified` / `--copymodified`: copy modified tracked files on create
-- `wt.nocopy` / `--nocopy`: exclude files from copying (gitignore syntax)
-- `wt.copy` / `--copy`: always copy specific patterns even if ignored
-- `wt.hook` / `--hook`: run commands after creating a new worktree
-- `wt.nocd` / `--nocd`: prevent automatic directory switching
+### Force delete (only when requested)
+```sh
+git wt -D <branch-or-worktree>
+```
 
-## Shell Integration (PowerShell)
+## Cleanup & recovery
+- Before deleting anything, check for uncommitted changes in that worktree:
+  ```sh
+  git -C <path-to-worktree> status -u
+  ```
+- If a worktree folder was deleted manually:
+  ```sh
+  git worktree prune
+  ```
 
+## PowerShell shell integration
 ```powershell
 Invoke-Expression (git wt --init powershell | Out-String)
 ```
 
-## Cleanup
-always check if there are uncommitted changes in a worktree before
-- removing its branch
-- deleting the local worktree folder
-
-Use `git wt -d <branch|worktree>` for clean removals.
-If a worktree folder was deleted manually, run `git worktree prune`.
-Ask user what to do with those uncommitted changes.
-
+## Guardrails
+- Never delete a worktree/branch that contains uncommitted work without an explicit user decision.
+- Avoid mixing unrelated tasks inside one worktree; create a new branch/worktree instead.

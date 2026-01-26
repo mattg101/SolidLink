@@ -1,27 +1,54 @@
 ---
 name: git-pr-merge
-description: Conducts an audit of a Pull Request, merges it into main, and synchronizes the local environment. Use this skill when a PR is ready for final review and integration.
+description: Gatekeeper workflow: audit a PR, merge to main using `gh`, and sync local branches/worktrees cleanly.
 trigger: always_on
 ---
 
-This skill focuses on the "Gatekeeper" role, ensuring that only high-quality, verified code enters the `main` branch.
+This skill follows `engineering-doctrine` and `structured-workflow`.
 
-## PR Merge & Sync Workflow
+## When to use
+- The PR has approval (or the user asks to merge).
+- You need a final quality pass before `main` changes.
 
-1.  **Audit**:
-    -   Inspect the PR diff using `gh pr diff [id]`. Focus on source code changes, excluding third-party packages or generated binaries.
-    -   Create an audit report in `audit_reports/audit_PR-[id].md` confirming compliance with tech specs and UI guides.
+## 1) Audit (final pass)
+- Inspect the diff:
+  ```sh
+  gh pr diff <id>
+  ```
+- Check for:
+  - Spec/acceptance criteria compliance
+  - Unintended file changes (generated artifacts, vendor files)
+  - Debug prints / TODOs / commented-out code
+  - Missing tests or broken build steps
 
-2.  **Merge Execution**:
-    -   Once the user approves the audit, perform the merge: `gh pr merge [id] --merge --delete-branch` (if it''s a feature branch).
-    -   For core `dev` branches, use `--merge` to integrate into `main`.
+If the repo uses audit reports, write one. Otherwise, summarize the audit in the PR comment/body text.
 
-3.  **Local Sync**:
-    -   Switch to `main` and pull the latest changes: `git checkout main; git pull origin main`.
-    -   Switch back to `dev` and merge `main` to ensure the local development branch is up-to-date: `git checkout dev; git merge main`.
-    -   Push the updated `dev` branch to the remote: `git push origin dev`.
+## 2) Merge
+Default to a normal merge commit unless the repo policy says squash/rebase:
+```sh
+gh pr merge <id> --merge --delete-branch
+```
 
-4.  **Verification**:
-    -   Verify that the local state is clean and ready for the next task.
+## 3) Sync local state
+```sh
+git checkout main
+git pull origin main
+```
 
+If you have a long-lived dev branch that should track main:
+```sh
+git checkout dev
+git merge main
+git push origin dev
+```
 
+## 4) Verify
+- Ensure repo is clean and on the expected branch:
+  ```sh
+  git status -u
+  git branch --show-current
+  ```
+
+## Guardrails
+- Never merge if the audit finds a blocking issue; surface the issue and propose the smallest fix.
+- Don’t delete branches that are not feature branches unless explicitly requested.
