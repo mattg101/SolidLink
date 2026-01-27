@@ -299,12 +299,17 @@ namespace SolidLink.Addin.UI
                 return;
             }
 
+            var record = robotDefinitionStorage.LoadAssociated(model);
+            var modelPath = model.GetPathName();
+            var preferredDir = ResolvePreferredLoadDirectory(record?.LinkedDefinitionPath, modelPath);
+
             var dialog = new OpenFileDialog
             {
                 Filter = "SolidLink Robot Definition (*.solidlink.json;*.json)|*.solidlink.json;*.json|All files (*.*)|*.*",
                 Multiselect = false,
                 CheckFileExists = true,
-                Title = "Load Robot Definition"
+                Title = "Load Robot Definition",
+                InitialDirectory = preferredDir
             };
 
             if (dialog.ShowDialog() != true)
@@ -312,7 +317,7 @@ namespace SolidLink.Addin.UI
                 return;
             }
 
-            var record = robotDefinitionStorage.LoadFromFile(dialog.FileName);
+            record = robotDefinitionStorage.LoadFromFile(dialog.FileName);
             if (record?.Definition == null)
             {
                 SendError("Failed to load robot definition file.");
@@ -325,6 +330,35 @@ namespace SolidLink.Addin.UI
                 bridge.Send("ROBOT_DEF_LOAD", record.Definition);
             }
             SendRobotDefinitionHistory(model, record);
+        }
+
+        private static string ResolvePreferredLoadDirectory(string linkedPath, string modelPath)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(linkedPath))
+                {
+                    var linkedDir = System.IO.Path.GetDirectoryName(linkedPath);
+                    if (!string.IsNullOrWhiteSpace(linkedDir) && System.IO.Directory.Exists(linkedDir))
+                    {
+                        return linkedDir;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(modelPath))
+                {
+                    var modelDir = System.IO.Path.GetDirectoryName(modelPath);
+                    if (!string.IsNullOrWhiteSpace(modelDir) && System.IO.Directory.Exists(modelDir))
+                    {
+                        return modelDir;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         }
 
         private void HandleRobotDefinitionLoadVersion(object payload)

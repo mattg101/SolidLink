@@ -457,6 +457,8 @@ function App() {
     const [showHistory, setShowHistory] = useState(false)
     const [versionMessage, setVersionMessage] = useState('')
     const [versionError, setVersionError] = useState<string | null>(null)
+    const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null)
+    const [pendingSaveAction, setPendingSaveAction] = useState<'save' | 'version' | null>(null)
   const [refGeometry, setRefGeometry] = useState<RefGeometryNode[]>([])
   const [refSelectedId, setRefSelectedId] = useState<string | null>(null)
   const [filter, setFilter] = useState('');
@@ -514,12 +516,26 @@ function App() {
     setGeometryMap(map);
   }, [frameById]);
 
-  const handleRefPickStart = useCallback((id: string) => {
-    // Reusing this state for 'Add to Node' logic or similar picking
-    // But now we have activeRobotNodeId for context menu logic
-    setRefPickMode(id); // If this was for Ref Frame assignment
-    setRefContextMenu(null);
-  }, []);
+    const assignFrameToNode = useCallback((nodeId: string, frameId: string) => {
+      const nextNodes = robotDefinition.nodes.map(node => {
+        if (node.id === nodeId) {
+          return { ...node, frameId };
+        }
+        return node;
+      });
+      commitRobotDefinition({ ...robotDefinition, nodes: nextNodes });
+    }, [robotDefinition, commitRobotDefinition]);
+
+    const handleRefPickStart = useCallback((id: string) => {
+      if (activeRobotNodeId) {
+        assignFrameToNode(activeRobotNodeId, id);
+        setRefContextMenu(null);
+        setRefPickMode(null);
+        return;
+      }
+      setRefPickMode(id);
+      setRefContextMenu(null);
+    }, [activeRobotNodeId, assignFrameToNode]);
 
   const handleRefPickCancel = useCallback(() => {
     setRefPickMode(null);
@@ -599,6 +615,17 @@ function App() {
       setRobotDefLinkedPath(payload?.linkedPath ?? null);
       setRobotDefModelPath(payload?.modelPath ?? null);
       setRobotDefLinkedMissing(Boolean(payload?.linkedMissing));
+
+      if (pendingSaveAction) {
+        if (pendingSaveAction === 'version') {
+          const latest = (payload?.history ?? []).slice().sort((a, b) => (b.versionNumber ?? 0) - (a.versionNumber ?? 0))[0];
+          const label = latest?.versionNumber ? `Saved version v${latest.versionNumber}` : 'Saved version';
+          setToast({ message: label, tone: 'success' });
+        } else {
+          setToast({ message: 'Saved robot definition', tone: 'success' });
+        }
+        setPendingSaveAction(null);
+      }
     })
 
     useEffect(() => {
@@ -619,7 +646,16 @@ function App() {
 
   useBridge<string>('ERROR_RESPONSE', (message) => {
     log(`Backend Error: ${message.payload}`, 'error');
+    if (message.payload) {
+      setToast({ message: message.payload, tone: 'error' });
+    }
   })
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2200);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     if (refGeometry.length === 0) {
@@ -816,19 +852,11 @@ function App() {
     bridgeClient.send(MessageTypes.ROBOT_DEF_UPDATE, next);
   }, []);
 
-  const handleRefPickAssign = useCallback((nodeId: string) => {
-    if (!refPickMode) return;
-    
-    const nextNodes = robotDefinition.nodes.map(node => {
-        if (node.id === nodeId) {
-            return { ...node, frameId: refPickMode };
-        }
-        return node;
-    });
-    
-    commitRobotDefinition({ ...robotDefinition, nodes: nextNodes });
-    setRefPickMode(null);
-  }, [refPickMode, robotDefinition, commitRobotDefinition]);
+    const handleRefPickAssign = useCallback((nodeId: string) => {
+      if (!refPickMode) return;
+      assignFrameToNode(nodeId, refPickMode);
+      setRefPickMode(null);
+    }, [refPickMode, assignFrameToNode]);
 
   const replaceRobotDefinition = useCallback((next: RobotDefinition) => {
     setRobotHistory({ past: [], present: next, future: [] });
@@ -857,6 +885,7 @@ function App() {
 
     const handleSaveRobotDefinition = useCallback(() => {
       bridgeClient.send(MessageTypes.ROBOT_DEF_SAVE, robotDefinition);
+      setPendingSaveAction('save');
     }, [robotDefinition]);
 
     const handleSaveVersion = useCallback(() => {
@@ -876,6 +905,7 @@ function App() {
         message
       };
       bridgeClient.send(MessageTypes.ROBOT_DEF_SAVE_VERSION, payload);
+      setPendingSaveAction('version');
       setShowSaveVersion(false);
       setVersionMessage('');
       setVersionError(null);
@@ -1858,6 +1888,31 @@ function App() {
               <button className="robot-def-button robot-def-primary" onClick={handleCreateLinked}>Create New</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div
+          style={{
+            position: 'fixed',
+            right: '18px',
+            bottom: '18px',
+            background: toast.tone === 'error'
+              ? 'linear-gradient(140deg, rgba(220, 70, 70, 0.95), rgba(180, 48, 48, 0.92))'
+              : 'linear-gradient(140deg, rgba(39, 181, 120, 0.95), rgba(24, 140, 95, 0.92))',
+            color: '#f3f8ff',
+            padding: '10px 14px',
+            borderRadius: '12px',
+            fontSize: '0.85rem',
+            boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            zIndex: 70,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <span style={{ fontWeight: 600 }}>{toast.message}</span>
         </div>
       )}
 
