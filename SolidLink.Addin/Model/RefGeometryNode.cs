@@ -19,6 +19,9 @@ namespace SolidLink.Addin.Model
         [JsonProperty("parentPath")]
         public string ParentPath { get; set; }
 
+        [JsonProperty("axisDirection")]
+        public double[] AxisDirection { get; set; }
+
         [JsonProperty("localTransform")]
         public TransformModel LocalTransform { get; set; }
 

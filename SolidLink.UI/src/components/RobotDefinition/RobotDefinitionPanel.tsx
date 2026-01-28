@@ -38,6 +38,26 @@ const JOINT_STYLE: Record<RobotJointType, { color: string; label: string }> = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+const normalizeVector = (values?: number[]) => {
+  if (!values || values.length < 3) return undefined;
+  const [x, y, z] = values;
+  const length = Math.sqrt(x * x + y * y + z * z);
+  if (!length) return undefined;
+  return [x / length, y / length, z / length];
+};
+
+const resolveAxisDirection = (ref?: RefGeometryNode) => {
+  if (!ref) return undefined;
+  const fromAxis = normalizeVector(ref.axisDirection);
+  if (fromAxis) return fromAxis;
+  const matrix = ref.localTransform?.matrix;
+  if (matrix && matrix.length >= 9) {
+    const fromMatrix = normalizeVector([matrix[0], matrix[1], matrix[2]]);
+    if (fromMatrix) return fromMatrix;
+  }
+  return undefined;
+};
+
 const buildNodeMap = (definition: RobotDefinition) => {
   const map = new Map<string, RobotNode>();
   definition.nodes.forEach(node => map.set(node.id, node));
@@ -166,6 +186,7 @@ export const RobotDefinitionPanel = ({
   const nodeMap = useMemo(() => buildNodeMap(definition), [definition]);
   const jointMap = useMemo(() => buildJointMap(definition), [definition]);
   const layout = useMemo(() => layoutTree(definition, collapsedIds), [definition, collapsedIds]);
+  const axisOptions = useMemo(() => refGeometry.filter(ref => ref.type === 'axis'), [refGeometry]);
 
   useEffect(() => {
     // If active geometry IDs change, highlight them in viewport
@@ -767,6 +788,35 @@ export const RobotDefinitionPanel = ({
                   <div className="robot-def-field">
                     <label>Child</label>
                     <div className="robot-def-readonly">{nodeMap.get(activeJoint.childId)?.name ?? activeJoint.childId}</div>
+                  </div>
+                  <div className="robot-def-field">
+                    <label>Axis</label>
+                    <select
+                      value={activeJoint.axisRefId || ''}
+                      disabled={activeJoint.type === 'fixed'}
+                      onChange={(event) => {
+                        const nextId = event.target.value || undefined;
+                        if (!nextId) {
+                          updateJoint(activeJoint.id, { axisRefId: undefined, axis: undefined });
+                          return;
+                        }
+                        const axisRef = axisOptions.find(ref => ref.id === nextId);
+                        const axis = resolveAxisDirection(axisRef) ?? [1, 0, 0];
+                        updateJoint(activeJoint.id, { axisRefId: nextId, axis });
+                      }}
+                    >
+                      <option value="">(None)</option>
+                      {axisOptions.map(ref => (
+                        <option key={ref.id} value={ref.id}>
+                          {ref.path}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="robot-def-axis">
+                      {activeJoint.axis
+                        ? `dir: [${activeJoint.axis.map(value => value.toFixed(3)).join(', ')}]`
+                        : 'dir: —'}
+                    </div>
                   </div>
                 </>
               )}

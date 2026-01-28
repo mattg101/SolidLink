@@ -190,6 +190,17 @@
   font-family: var(--font-family);
 }
 
+.robot-def-field select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.robot-def-axis {
+  font-size: 0.65rem;
+  color: #8aa6b9;
+  letter-spacing: 0.04em;
+}
+
 .robot-def-readonly {
   padding: 0.4rem 0.55rem;
   border-radius: 8px;

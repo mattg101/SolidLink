@@ -1,11 +1,11 @@
 {
   "nodes": [
-    { "id": "node-base", "name": "Base Node", "type": "body", "children": ["node-arm"], "geometryIds": ["root"] },
+    { "id": "node-base", "name": "Base Node", "type": "body", "children": ["node-arm"], "geometryIds": ["root"], "frameId": "ref-csys-1" },
     { "id": "node-arm", "name": "Arm Node", "type": "body", "children": ["node-end"], "geometryIds": ["arm"] },
     { "id": "node-end", "name": "End Node", "type": "body", "children": [], "geometryIds": ["end"] }
   ],
   "joints": [
-    { "id": "j1", "parentId": "node-base", "childId": "node-arm", "type": "revolute" },
+    { "id": "j1", "parentId": "node-base", "childId": "node-arm", "type": "revolute", "axisRefId": "ref-axis-1", "axis": [0, 1, 0] },
     { "id": "j2", "parentId": "node-arm", "childId": "node-end", "type": "revolute" }
   ]
 }

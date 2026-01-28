@@ -48,6 +48,7 @@ export interface RefGeometryNode {
   name: string;
   path: string;
   parentPath: string;
+  axisDirection?: number[];
   localTransform?: {
     position?: number[];
     rotation?: number[];
@@ -88,6 +89,8 @@ export interface RobotJoint {
   parentId: string;
   childId: string;
   type: RobotJointType;
+  axisRefId?: string;
+  axis?: number[];
 }
 
 export interface RobotDefinition {

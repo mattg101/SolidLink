@@ -1,6 +1,7 @@
 [
-  { "id": "ref-origin", "path": "Origin", "type": "axis" },
+  { "id": "ref-origin", "path": "Origin", "type": "axis", "axisDirection": [1, 0, 0] },
   { "id": "ref-plane-top", "path": "Top Plane", "type": "plane" },
   { "id": "ref-plane-front", "path": "Front Plane", "type": "plane" },
-  { "id": "ref-axis-1", "path": "Axis-1", "type": "axis" }
+  { "id": "ref-axis-1", "path": "Axis-1", "type": "axis", "axisDirection": [0, 1, 0] },
+  { "id": "ref-csys-1", "path": "Csys-1", "type": "csys", "localTransform": { "position": [0.1, 0.02, 0] } }
 ]

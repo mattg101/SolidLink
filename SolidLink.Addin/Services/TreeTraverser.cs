@@ -185,6 +185,7 @@ namespace SolidLink.Addin.Services
                     Name = name,
                     Path = fullPath,
                     ParentPath = componentPath,
+                    AxisDirection = reference.AxisDirection,
                     LocalTransform = ExtractTransform(reference.TransformMatrix)
                 });
             }

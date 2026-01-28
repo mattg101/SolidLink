@@ -268,6 +268,7 @@ namespace SolidLink.Addin.Adapters
                         {
                             var featureName = ComHelpers.SafeCall(() => feature.Name, string.Empty);
                             double[] transformData = null;
+                            double[] axisDirection = null;
                             if (typeName == "CoordSys")
                             {
                                 MathTransform swTransform = null;
@@ -284,8 +285,12 @@ namespace SolidLink.Addin.Adapters
                                     ComHelpers.ReleaseComObject(swTransform);
                                 }
                             }
+                            else if (typeName == "RefAxis")
+                            {
+                                axisDirection = TryGetAxisDirection(feature);
+                            }
 
-                            _referenceFrames.Add(new SolidWorksReferenceFrame(featureName, typeName, transformData));
+                            _referenceFrames.Add(new SolidWorksReferenceFrame(featureName, typeName, transformData, axisDirection));
                         }
 
                         var next = ComHelpers.SafeCall(() => feature.GetNextFeature() as Feature);
@@ -309,6 +314,58 @@ namespace SolidLink.Addin.Adapters
         private static double[] CreateIdentityTransform()
         {
             return new double[] { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+        }
+
+        private static double[] TryGetAxisDirection(Feature feature)
+        {
+            RefAxis refAxis = null;
+            try
+            {
+                refAxis = feature?.GetSpecificFeature2() as RefAxis;
+                if (refAxis == null)
+                {
+                    return null;
+                }
+
+                var axisParams = refAxis.GetRefAxisParams() as double[];
+                if (axisParams == null || axisParams.Length < 6)
+                {
+                    return null;
+                }
+
+                var direction = new[]
+                {
+                    axisParams[3] - axisParams[0],
+                    axisParams[4] - axisParams[1],
+                    axisParams[5] - axisParams[2]
+                };
+
+                return NormalizeVector(direction);
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                ComHelpers.ReleaseComObject(refAxis);
+            }
+        }
+
+        private static double[] NormalizeVector(double[] vector)
+        {
+            if (vector == null || vector.Length < 3)
+            {
+                return null;
+            }
+
+            var length = Math.Sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+            if (length <= 0)
+            {
+                return null;
+            }
+
+            return new[] { vector[0] / length, vector[1] / length, vector[2] / length };
         }
 
         public void Dispose()

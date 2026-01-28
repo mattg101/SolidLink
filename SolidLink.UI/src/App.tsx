@@ -472,6 +472,7 @@ function App() {
   const [refContextMenu, setRefContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
   const [refPickMode, setRefPickMode] = useState<string | null>(null);
   const [activeRobotNodeId, setActiveRobotNodeId] = useState<string | null>(null);
+  const [activeRobotJointId, setActiveRobotJointId] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState({
     wv2Present: false,
     lastMessage: 'none',
@@ -834,6 +835,14 @@ function App() {
   const robotDefinition = robotHistory.present;
   const canUndoRobot = robotHistory.past.length > 0;
   const canRedoRobot = robotHistory.future.length > 0;
+  const activeNodeFrameId = useMemo(() => {
+    if (!activeRobotNodeId) return null;
+    return robotDefinition.nodes.find(node => node.id === activeRobotNodeId)?.frameId ?? null;
+  }, [activeRobotNodeId, robotDefinition]);
+  const activeJoint = useMemo(() => {
+    if (!activeRobotJointId) return null;
+    return robotDefinition.joints.find(joint => joint.id === activeRobotJointId) ?? null;
+  }, [activeRobotJointId, robotDefinition]);
 
   const robotSelection = useMemo(() => {
     if (selectedIds.length === 0) return null;
@@ -1217,7 +1226,8 @@ function App() {
     setRefContextMenu({ x: point.x, y: point.y, id });
   }, []);
 
-  const handleRobotSelectionChange = useCallback((nodeIds: string[], _jointIds: string[]) => {
+  const handleRobotSelectionChange = useCallback((nodeIds: string[], jointIds: string[]) => {
+    setActiveRobotJointId(jointIds.length === 1 ? jointIds[0] : null);
     if (nodeIds.length === 0) {
       // Optional: Clear selection if we want strict sync
       // clearSelection();
@@ -1502,6 +1512,9 @@ function App() {
                   refGeometry={refGeometry}
                   refOriginVisibility={refOriginVisibility}
                   hiddenRefIds={hiddenIdSet}
+                  highlightAxisId={activeJoint?.axisRefId}
+                  highlightAxisDirection={activeJoint?.axis}
+                  highlightFrameId={activeNodeFrameId}
                 />
               ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--color-text-secondary)' }}>

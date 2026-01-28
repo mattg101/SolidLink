@@ -5,5 +5,6 @@ namespace SolidLink.Addin.Abstractions
         string Name { get; }
         string Type { get; }
         double[] TransformMatrix { get; }
+        double[] AxisDirection { get; }
     }
 }

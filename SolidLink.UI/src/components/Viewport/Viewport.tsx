@@ -3,9 +3,9 @@
  * Transforms are applied using absolute positioning from SolidWorks assembly data.
  */
 import React, { useCallback, useMemo, useEffect, useRef, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid } from '@react-three/drei';
-import { Box3, Matrix4, Vector3, Quaternion, Euler, Mesh, PerspectiveCamera as ThreePerspectiveCamera } from 'three';
+import { Box3, Matrix4, Vector3, Quaternion, Euler, Mesh, Group, MeshStandardMaterial, PerspectiveCamera as ThreePerspectiveCamera } from 'three';
 import { useSelection } from '../../context/SelectionContext';
 import { log } from '../../utils/logger';
 
@@ -41,6 +41,7 @@ interface RefGeometryNode {
   name: string;
   path: string;
   parentPath: string;
+  axisDirection?: number[];
   localTransform?: {
     position?: number[];
     rotation?: number[];
@@ -316,12 +317,51 @@ const AxisLine = ({ size = 0.12, color = '#f5c16c' }: { size?: number; color?: s
   );
 };
 
+const AxisIndicator = ({
+  direction,
+  length = 0.4,
+  color = '#4cc9f0',
+  emphasis = false
+}: {
+  direction?: number[];
+  length?: number;
+  color?: string;
+  emphasis?: boolean;
+}) => {
+  const { quaternion } = useMemo(() => {
+    const dir = new Vector3(direction?.[0] ?? 1, direction?.[1] ?? 0, direction?.[2] ?? 0);
+    if (dir.lengthSq() === 0) {
+      dir.set(1, 0, 0);
+    }
+    dir.normalize();
+    const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), dir);
+    return { quaternion: q };
+  }, [direction]);
+
+  return (
+    <group quaternion={quaternion}>
+      <mesh rotation={[0, 0, Math.PI / 2]} position={[length / 2, 0, 0]}>
+        <cylinderGeometry args={[0.008, 0.008, length, 12]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} depthTest={!emphasis} />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 2]} position={[length, 0, 0]}>
+        <coneGeometry args={[0.03, 0.08, 16]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.9} depthTest={!emphasis} />
+      </mesh>
+    </group>
+  );
+};
+
 const RefGeometryGlyph = ({
   node,
-  showOrigin
+  showOrigin,
+  emphasis = false,
+  axisDirection
 }: {
   node: RefGeometryNode;
   showOrigin: boolean;
+  emphasis?: boolean;
+  axisDirection?: number[];
 }) => {
   const { position, quaternion } = useMemo(() => {
     const matrix = node.localTransform?.matrix;
@@ -349,12 +389,55 @@ const RefGeometryGlyph = ({
     return { position: p, quaternion: q };
   }, [node.localTransform?.matrix, node.localTransform?.position]);
 
+  const groupRef = useRef<Group>(null);
+  const ringMaterialRef = useRef<MeshStandardMaterial>(null);
+
+  useFrame(({ clock }) => {
+    if (!emphasis || !groupRef.current) return;
+    const pulse = 1 + Math.sin(clock.getElapsedTime() * 2.2) * 0.06;
+    groupRef.current.scale.setScalar(pulse);
+    if (ringMaterialRef.current) {
+      ringMaterialRef.current.emissiveIntensity = 0.6 + Math.sin(clock.getElapsedTime() * 2.2) * 0.25;
+    }
+  });
+
+  useEffect(() => {
+    if (!emphasis && groupRef.current) {
+      groupRef.current.scale.setScalar(1);
+      if (ringMaterialRef.current) {
+        ringMaterialRef.current.emissiveIntensity = 0.7;
+      }
+    }
+  }, [emphasis]);
+
   return (
-    <group position={position} quaternion={quaternion}>
+    <group position={position} quaternion={quaternion} ref={groupRef} renderOrder={emphasis ? 5 : 0}>
       {node.type === 'csys' ? (
-        <axesHelper args={[0.15]} />
+        <group>
+          <axesHelper args={[emphasis ? 0.35 : 0.15]} />
+          {emphasis && (
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.06, 0.1, 32]} />
+              <meshStandardMaterial
+                ref={ringMaterialRef}
+                color="#4cc9f0"
+                emissive="#4cc9f0"
+                emissiveIntensity={0.7}
+                transparent
+                opacity={0.65}
+                depthTest={false}
+              />
+            </mesh>
+          )}
+        </group>
       ) : (
-        <AxisLine />
+        <group>
+          {emphasis ? (
+            <AxisIndicator direction={axisDirection ?? node.axisDirection} emphasis />
+          ) : (
+            <AxisLine />
+          )}
+        </group>
       )}
       {showOrigin && (
         <mesh>
@@ -398,13 +481,19 @@ export const Viewport = ({
   visibleIds,
   refGeometry,
   refOriginVisibility,
-  hiddenRefIds
+  hiddenRefIds,
+  highlightAxisId,
+  highlightAxisDirection,
+  highlightFrameId
 }: {
   tree: any;
   visibleIds?: Set<string> | null;
   refGeometry?: RefGeometryNode[];
   refOriginVisibility?: Record<string, boolean>;
   hiddenRefIds?: Set<string>;
+  highlightAxisId?: string | null;
+  highlightAxisDirection?: number[];
+  highlightFrameId?: string | null;
 }) => {
   const { selectedIds, setSelection, clearSelection } = useSelection();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -616,7 +705,17 @@ export const Viewport = ({
         {refGeometry?.map(node => {
           if (hiddenRefIds?.has(node.id)) return null;
           const showOrigin = refOriginVisibility?.[node.id] ?? false;
-          return <RefGeometryGlyph key={node.id} node={node} showOrigin={showOrigin} />;
+          const emphasis = node.id === highlightAxisId || node.id === highlightFrameId;
+          const axisDirection = node.id === highlightAxisId ? (highlightAxisDirection ?? node.axisDirection) : node.axisDirection;
+          return (
+            <RefGeometryGlyph
+              key={node.id}
+              node={node}
+              showOrigin={showOrigin}
+              emphasis={emphasis}
+              axisDirection={axisDirection}
+            />
+          );
         })}
         <RenderReadbackBridge enabled={import.meta.env.DEV} />
       </Canvas>
